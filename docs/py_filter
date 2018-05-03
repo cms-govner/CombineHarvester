@@ -1,2 +1,0 @@
-#!/bin/bash
-python docs/doxypypy/doxypypy.py -a -c $1
