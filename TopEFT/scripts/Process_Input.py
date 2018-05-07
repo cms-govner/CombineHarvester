@@ -5,32 +5,33 @@ def process_input(infile):
 
     readdata = []
     for line in readfile:
+        line = line.lstrip('_')
         line = line.rstrip('\n')
         line = line.split('&')
         readdata.append(line)
 
-    categories = readdata[0][1:]
-    proc_values = [float(line[1]) for line in readdata[1:]]
+    #Lists of names
+    categories = readdata[0][1:] #e.g. 2los_ee_2j_1b
+    proc_names=[] #e.g. ttH
+    sys_types=[] #e.g. Lumi
 
-    #proc_dict={}
-    sys_dict={}
-    proc_names=[]
-    sys_types=[]
+    proc_dict={} #process,category:nominal rate
+    sys_dict={} #process,category:{systematic type:rate}
+
     for line in readdata[1:]:
+        #Fill nominal value dict
         if ':' not in line[0]:
             proc_names.append(line[0])
-            #for cat_idx, cat_name in enumerate(categories):
-            #    proc_dict.update({(line[0],cat_name):line[cat_idx+1]})
+            for cat_idx, cat_name in enumerate(categories):
+                proc_dict.update({(line[0],cat_name):float(line[cat_idx+1])})
+        #Fill systematic value dict
         else:
             sys=line[0].split(':')
-            #print sys
             if sys[1] not in sys_types:
                 sys_types.append(sys[1])
             for cat_idx, cat_name in enumerate(categories):
-                #print cat_idx, cat_name
-                #sys_dict[(sys[0],cat_name)] = {sys[1]:line[cat_idx+1]}
                 if (sys[0],cat_name) not in sys_dict:
                     sys_dict[(sys[0],cat_name)]={}
-                sys_dict[(sys[0],cat_name)].update({sys[1]:line[cat_idx+1]})
+                sys_dict[(sys[0],cat_name)].update({sys[1]:float(line[cat_idx+1])})
 
-    return(categories, proc_names, proc_values, sys_types, sys_dict)
+    return(categories, proc_names, proc_dict, sys_types, sys_dict)
