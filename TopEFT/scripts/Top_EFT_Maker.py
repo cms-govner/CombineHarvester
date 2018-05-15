@@ -12,15 +12,24 @@ cb.SetVerbosity(0)
 #Declare lists of analysis divisions
 eras = ['2016'] #Data eras
 
-sig_procs = proc_names[-7:] #Signal Processes
-bkgd_procs = proc_names[:-7] #Background Processes
+#sig_procs = proc_names[-7:] #Signal Processes
+#bkgd_procs = proc_names[:-7] #Background Processes
+#sig_procs = proc_names[-1:] #Signal Processes
+#bkgd_procs = proc_names[:-1] #Background Processes
+sig_procs = proc_names[:4] #Signal Processes
+bkgd_procs = proc_names[4:] #Background Processes
 
 chan = [''] # Indistiguishable process subcategories i.e. for MC only
 
 cats = list(enumerate(categories)) #Process bins. Must be list of tuple
 
 #Placeholder for cross-sections/rates until we have an input
-obs_rates = dict(zip(categories,range(0,len(categories)))) #Placeholder
+obs_rates={}
+for cat in categories:
+    cat_asimov = 0
+    for proc in proc_names:
+        cat_asimov += proc_dict[proc,cat]
+    obs_rates[cat]=cat_asimov
 
 #Initialize structure of each observation (data) and process (MC signal and background)
 #Can be adjusted very heavily to specialize each era/process/category
@@ -41,16 +50,25 @@ for proc in proc_names:
     for cat in categories:
         #print "    in category",cat,"..."
         if (proc,cat) in sys_dict.keys(): # probably unnecessary safeguard
-            for sys_type in sys_dict[(proc,cat)].keys():
-                #Fully correlated systematics
-                if sys_type in ['LumiUP','LumiDOWN','pdfUP','pdfDOWN','Q2UP','Q2DOWN','MCStatUP','MCStatDOWN']:
+            for sys_type in sys_types:
+                #Fully correlated systematics listed by rate FIXME
+                if sys_type in []:
                     cb.cp().process([proc]).bin([cat]).AddSyst(cb,sys_type,'lnN',ch.SystMap()( sys_dict[(proc,cat)][sys_type] ))
-                #Fully uncorrelated systematics (MCStatUP/DOWN)
-                else:
-                    cb.cp().process([proc]).bin([cat]).AddSyst(cb,proc+cat+':'+sys_type,'lnN',ch.SystMap()( float(sys_dict[(proc,cat)][sys_type]) ))
+                #Systematics listed by their fluctuations
+                elif sys_type in ['LumiUP','pdfUP']:
+                    unc = (proc_dict[proc,cat]+sys_dict[proc,cat][sys_type])/proc_dict[proc,cat] if sys_dict[proc,cat][sys_type]>0. else 1.0000
+                    cb.cp().process([proc]).bin([cat]).AddSyst(cb,sys_type.rstrip('UP'),'lnN',ch.SystMap()(unc))
+                #Shape systematics (not used in counting experiment)
+                #elif sys_type in ['MCStatUP','MCStatDOWN','Q2UP','Q2DOWN']:
+                #Superfluous systematics
+                #elif sys_type in ['LumiDOWN','pdfDOWN']:
+                #Fully uncorrelated systematics
+                #else:
+                    #cb.cp().process([proc]).bin([cat]).AddSyst(cb,proc+cat+':'+sys_type,'lnN',ch.SystMap()( float(sys_dict[(proc,cat)][sys_type]) ))
 
 
 #cb.PrintAll()
-print "Writing datacard..."
-cb.WriteDatacard('EFT_datacard.txt')
+print "Writing datacard '{}'...".format("Datacard_test.txt")
+#cb.WriteDatacard('EFT_datacard.txt')
+cb.WriteDatacard('Datacard_test.txt')
 

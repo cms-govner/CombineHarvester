@@ -1,4 +1,5 @@
 #import numpy as np
+import math
 
 def process_input(infile):
     readfile = open(infile, 'r')
@@ -7,11 +8,12 @@ def process_input(infile):
     for line in readfile:
         line = line.lstrip('_')
         line = line.rstrip('\n')
+        #line = line.replace('ttH','ttX')
         line = line.split('&')
         readdata.append(line)
 
     #Lists of names
-    categories = readdata[0][1:] #e.g. 2los_ee_2j_1b
+    categories = ["C_"+cat for cat in readdata[0][1:]] #e.g. 2los_ee_2j_1b
     proc_names=[] #e.g. ttH
     sys_types=[] #e.g. Lumi
 
@@ -34,4 +36,28 @@ def process_input(infile):
                     sys_dict[(sys[0],cat_name)]={}
                 sys_dict[(sys[0],cat_name)].update({sys[1]:float(line[cat_idx+1])})
 
-    return(categories, proc_names, proc_dict, sys_types, sys_dict)
+    #Find the most sensitive categories to the process signal strength by S/sqrt(B)
+    #Summing all signals together to make life easier
+    #Only use the top 20 categories
+    #In the event of no background, ignore them
+    sig_names = proc_names[-7:] #Signal Processes
+    bkgd_names = proc_names[:-7] #Background Processes
+    SorB_arr = []
+    for cat in categories:
+        bkgd = 0.
+        sig = 0.
+        for proc in bkgd_names:
+            bkgd += proc_dict[proc,cat]
+        for proc in sig_names:
+            sig += proc_dict[proc,cat]
+        SorB = sig/math.sqrt(bkgd) if bkgd!=0. else 0. # Some categories have no background.
+        SorB_arr.append((cat,SorB))
+    SorB_arr.sort(key=lambda tup: tup[1], reverse=True)
+    SorB_arr = SorB_arr[:20]
+    categories_best = [tuple[0] for tuple in SorB_arr]
+
+
+    #return(categories, proc_names, proc_dict, sys_types, sys_dict)
+#    return(categories[:50], proc_names[:19], proc_dict, sys_types, sys_dict)
+#    return(categories[:50], ['ttW','ttZ','ttH','tZq','ttbar_dilepton'], proc_dict, sys_types, sys_dict)
+    return(categories_best, ['ttW','ttZ','ttH','tZq']+bkgd_names, proc_dict, sys_types, sys_dict)
