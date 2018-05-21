@@ -1,9 +1,9 @@
 import CombineHarvester.CombineTools.ch as ch
-from Process_Input import process_input
+import CombineHarvester.TopEFT.Process_Input as pi
 
 #Parse input file
 print "Parsing input file..."
-(categories, proc_names, proc_dict, sys_types, sys_dict) = process_input('../data/test_input_for_datacard_2.txt')
+(categories, proc_names, proc_dict, sys_types, sys_dict) = pi.process_input('../data/test_input_for_datacard_2.txt')
 
 #Initialize CombineHarvester instance
 cb = ch.CombineHarvester()
