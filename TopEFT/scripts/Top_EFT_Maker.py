@@ -51,17 +51,19 @@ for proc in proc_names:
         #print "    in category",cat,"..."
         if (proc,cat) in sys_dict.keys(): # probably unnecessary safeguard
             for sys_type in sys_types:
-                #Fully correlated systematics listed by rate FIXME
+                #Fully correlated systematics listed by rate
                 if sys_type in []:
                     cb.cp().process([proc]).bin([cat]).AddSyst(cb,sys_type,'lnN',ch.SystMap()( sys_dict[(proc,cat)][sys_type] ))
                 #Systematics listed by their fluctuations
-                elif sys_type in ['LumiUP','pdfUP']:
+                elif sys_type in ['pdfUP']:
                     unc = (proc_dict[proc,cat]+sys_dict[proc,cat][sys_type])/proc_dict[proc,cat] if sys_dict[proc,cat][sys_type]>0. else 1.0000
                     cb.cp().process([proc]).bin([cat]).AddSyst(cb,sys_type.rstrip('UP'),'lnN',ch.SystMap()(unc))
                 #Shape systematics (not used in counting experiment)
                 #elif sys_type in ['MCStatUP','MCStatDOWN','Q2UP','Q2DOWN']:
                 #Superfluous systematics
-                #elif sys_type in ['LumiDOWN','pdfDOWN']:
+                #Lumi uncertainty (fully correlated, identical for all categories)
+                elif sys_type in ['LumiUP']:
+                    cb.cp().process([proc]).bin([cat]).AddSyst(cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
                 #Fully uncorrelated systematics
                 #else:
                     #cb.cp().process([proc]).bin([cat]).AddSyst(cb,proc+cat+':'+sys_type,'lnN',ch.SystMap()( float(sys_dict[(proc,cat)][sys_type]) ))
