@@ -1,5 +1,6 @@
 #import numpy as np
 import math
+from ROOT import TH1, TH1D, TFile
 
 def process_input(infile):
     readfile = open(infile, 'r')
@@ -8,7 +9,6 @@ def process_input(infile):
     for line in readfile:
         line = line.lstrip('_')
         line = line.rstrip('\n')
-        #line = line.replace('ttH','ttX')
         line = line.split('&')
         readdata.append(line)
 
@@ -18,7 +18,7 @@ def process_input(infile):
     sys_types=[] #e.g. Lumi
 
     proc_dict={} #process,category:nominal rate
-    sys_dict={} #process,category:{systematic type:rate}
+    sys_dict={} #process,category:{systematic type:ratio to nominal rate}
 
     for line in readdata[1:]:
         #Fill nominal value dict
@@ -60,4 +60,69 @@ def process_input(infile):
     #return(categories, proc_names, proc_dict, sys_types, sys_dict)
 #    return(categories[:50], proc_names[:19], proc_dict, sys_types, sys_dict)
 #    return(categories[:50], ['ttW','ttZ','ttH','tZq','ttbar_dilepton'], proc_dict, sys_types, sys_dict)
-    return(categories_best, ['ttW','ttZ','ttH','tZq']+bkgd_names, proc_dict, sys_types, sys_dict)
+    return(categories_best, ['ttH','tZq']+bkgd_names, proc_dict, sys_types, sys_dict)
+
+def process_root_input(infile):
+    readfile = TFile.Open(infile)
+
+    #Lists of names
+    categories = [] #e.g. 2los_ee_2j_1b
+    proc_names=[] #e.g. ttH
+    sys_types=[] #e.g. Lumi
+
+    #Dicts for rates
+    proc_dict={} #process,category:nominal rate
+    sys_dict={} #process,category:{systematic type:ratio to nominal rate}
+
+    #Main parsing loop
+    for key in readfile.GetListOfKeys():
+        hist = readfile.Get(key.GetName())
+
+        #Get categorical information
+        histname = hist.GetName().split('.')
+        category,systematic,process = '','',''
+        if(len(histname)==3): [category,systematic,process] = histname
+        if(len(histname)==2): [category,process] = histname
+
+        #Logic for the systematic histograms
+        if systematic != '':
+            if systematic not in sys_types: sys_types.append(systematic)
+
+            for bin in range(1,hist.GetNbinsX()): #Don't look at 0jet bins
+                #Check category exists. This is probably redundant as if it doesn't, it should give an error when calculating the ratio
+                category_njet = 'C_{0}_{1}j'.format(category,bin)
+                if category_njet not in categories: categories.append(category_njet)
+
+                bin_yield = round(hist.GetBinContent(1+bin),4)
+                bin_ratio = 1.0
+                #Calculate ratio to nominal
+                #If the nominal yield is zero, set the ratio to 1.0
+		#If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
+                if proc_dict[(process,category_njet)] != 0:
+                    bin_ratio = bin_yield/proc_dict[(process,category_njet)]
+                    bin_ratio = max(bin_ratio,0.0001)
+		#Create sys_dict key if it doesn't exit; can't edit a dict object that doesn't exist yet
+                if not sys_dict.has_key((process,category_njet)):
+                    sys_dict[(process,category_njet)] = {}
+                sys_dict[(process,category_njet)][systematic] = bin_ratio
+
+	#Logic for nominal rates
+        else:
+            if process not in proc_names: proc_names.append(process)
+            for bin in range(1,hist.GetNbinsX()):
+                category_njet = 'C_{0}_{1}j'.format(category,bin)
+                if category_njet not in categories: categories.append(category_njet)
+                bin_yield = round(hist.GetBinContent(1+bin),4)
+                proc_dict.update({(process,category_njet):bin_yield})
+
+    # Only analyze categories with at least a few background events to prevent negative yields
+    categories_nonzero = []
+    for cat in categories:
+        bkgd = 0.
+        for proc in proc_names[:-4]:
+            bkgd += proc_dict[proc,cat]
+        if bkgd > 2: categories_nonzero.append(cat)
+
+    return(categories_nonzero, proc_names, proc_dict, sys_types, sys_dict)
+
+        

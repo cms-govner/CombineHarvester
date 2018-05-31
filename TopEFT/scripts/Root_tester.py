@@ -3,7 +3,7 @@ import CombineHarvester.TopEFT.Process_Input as pi
 
 #Parse input file
 print "Parsing input file..."
-(categories, proc_names, proc_dict, sys_types, sys_dict) = pi.process_input('../data/test_input_for_datacard_3.txt')
+(categories, proc_names, proc_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest3.root')
 
 #Initialize CombineHarvester instance
 cb = ch.CombineHarvester()
@@ -12,18 +12,15 @@ cb.SetVerbosity(0)
 #Declare lists of analysis divisions
 eras = ['2016'] #Data eras
 
-#sig_procs = proc_names[-7:] #Signal Processes
-#bkgd_procs = proc_names[:-7] #Background Processes
-#sig_procs = proc_names[-1:] #Signal Processes
-#bkgd_procs = proc_names[:-1] #Background Processes
-sig_procs = proc_names[:2] #Signal Processes
-bkgd_procs = proc_names[2:] #Background Processes
+#Manually set signal and background processes... chance for automation here
+sig_procs = proc_names[-4:] #Signal Processes
+bkgd_procs = proc_names[:-4] #Background Processes
 
 chan = [''] # Indistiguishable process subcategories i.e. for MC only
 
-cats = list(enumerate(categories)) #Process bins. Must be list of tuple
+cats = list(enumerate(categories)) #Process bins. Must be list of tuple like this
 
-#Placeholder for cross-sections/rates until we have an input
+#Placeholder for data cross-sections/rates until we have an input
 obs_rates={}
 for cat in categories:
     cat_asimov = 0
@@ -33,6 +30,7 @@ for cat in categories:
 
 #Initialize structure of each observation (data) and process (MC signal and background)
 #Can be adjusted very heavily to specialize each era/process/category
+# ['*'] is Higgs mass hypothesis, which we ignore
 cb.AddObservations( ['*'], ['Top_EFT'], eras, chan, cats )
 
 cb.AddProcesses( ['*'], ['Top_EFT'], eras, chan, sig_procs, cats, True) 
@@ -48,8 +46,12 @@ cb.ForEachProc(lambda x: x.set_rate(proc_dict[x.process(),x.bin()]))
 for proc in proc_names:
     print "Adding systematics for",proc,"..."
     for cat in categories:
-        #print "    in category",cat,"..."
+        #Lumi uncertainty (fully correlated, identical for all categories)
+        cb.cp().process([proc]).bin([cat]).AddSyst(cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
+        #JES uncertainty (fully correlated, asymmetric)
+        cb.cp().process([proc]).bin([cat]).AddSyst(cb,'JES','lnN',ch.SystMap()( [sys_dict[(proc,cat)]['JESUP'], sys_dict[(proc,cat)]['JESDOWN']]))
         if (proc,cat) in sys_dict.keys(): # probably unnecessary safeguard
+            #Other systematics -- To be added
             for sys_type in sys_types:
                 #Fully correlated systematics listed by rate
                 if sys_type in []:
@@ -61,16 +63,12 @@ for proc in proc_names:
                 #Shape systematics (not used in counting experiment)
                 #elif sys_type in ['MCStatUP','MCStatDOWN','Q2UP','Q2DOWN']:
                 #Superfluous systematics
-                #Lumi uncertainty (fully correlated, identical for all categories)
-                elif sys_type in ['LumiUP']:
-                    cb.cp().process([proc]).bin([cat]).AddSyst(cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
                 #Fully uncorrelated systematics
                 #else:
                     #cb.cp().process([proc]).bin([cat]).AddSyst(cb,proc+cat+':'+sys_type,'lnN',ch.SystMap()( float(sys_dict[(proc,cat)][sys_type]) ))
 
 
-#cb.PrintAll()
-print "Writing datacard '{}'...".format("Datacard_test.txt")
-#cb.WriteDatacard('EFT_datacard.txt')
-cb.WriteDatacard('Datacard_test.txt')
+#cb.PrintAll() #Print the datacard
+print "Writing datacard '{}'...".format("Datacard_root_test.txt")
+cb.WriteDatacard('Datacard_root_test.txt')
 
