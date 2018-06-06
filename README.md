@@ -21,10 +21,15 @@ A new full release area can be set up and compiled in the following steps:
 
 ## Make the Datacard
 
-The main script is named "Top_EFT_Maker.py". To run it:
+The main script is named "Top_EFT_Maker.py". This creates a datacard from an input text file. To run it:
 
     cd CombineHarvester/TopEFT/test
     python ../scripts/Top_EFT_Maker.py
+    
+Alternatively, a datacard can be made from root files.
+
+    cd CombineHarvester/TopEFT/test
+    python ../scripts/Root_tester.py
     
 The resulting datacard will be created in your current directory (.../test/)
 
