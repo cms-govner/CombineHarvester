@@ -30,7 +30,9 @@ The resulting datacard will be created in your current directory (.../test/)
 
 ## Do some fits
 
-These datacards can be fit with the usual combine commands, but we have a script to do a simulataneous 4D fit on the four signal processes (ttZ, ttW, ttH, tZq). It first makes a workspace, then does a MultiDimFit. To run it (from "test"):
+For the full suite of fitting scripts, see https://github.com/cms-govner/EFTFit
+
+These datacards can be fit with the usual combine commands, but we have a test script to do a simulataneous 4D fit on the four signal processes (ttZ, ttW, ttH, tZq). It first makes a workspace, then does a MultiDimFit. To run it (from "test"):
 
     source ../scripts/4DFit.csh
 
