@@ -17,7 +17,6 @@ output/
 __init__.py
 *.pyc
 
-*.root
 *.png
 *.pdf
 

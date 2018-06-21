@@ -3,7 +3,7 @@ import CombineHarvester.TopEFT.Process_Input as pi
 
 #Parse input file
 print "Parsing input file..."
-(categories, proc_names, proc_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest3.root')
+(categories, data_names, data_dict, proc_names, proc_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest4.root')
 
 #Initialize CombineHarvester instance
 cb = ch.CombineHarvester()
@@ -22,11 +22,19 @@ cats = list(enumerate(categories)) #Process bins. Must be list of tuple like thi
 
 #Placeholder for data cross-sections/rates until we have an input
 obs_rates={}
+
+#Asimov data
 for cat in categories:
     cat_asimov = 0
     for proc in proc_names:
         cat_asimov += proc_dict[proc,cat]
     obs_rates[cat]=cat_asimov
+
+#Actual data (hists not currently filled, but placeholder is present)
+#for cat in categories:
+#    obs_rates[cat]=0
+#for (proc, cat) in data_dict.keys():
+#   if cat in categories: obs_rates[cat] += data_dict[proc,cat]
 
 #Initialize structure of each observation (data) and process (MC signal and background)
 #Can be adjusted very heavily to specialize each era/process/category
@@ -36,9 +44,11 @@ cb.AddObservations( ['*'], ['Top_EFT'], eras, chan, cats )
 cb.AddProcesses( ['*'], ['Top_EFT'], eras, chan, sig_procs, cats, True) 
 cb.AddProcesses( ['*'], ['Top_EFT'], eras, chan, bkgd_procs, cats, False)
 
-#Fill the nominal rates
+#Fill the data rates
 print "Adding observation rates..."
 cb.ForEachObs(lambda x: x.set_rate(obs_rates[x.bin()])) #Not split by process/channel, obviously
+
+#Fill the nominal MC rates
 print "Adding MC rates..."
 cb.ForEachProc(lambda x: x.set_rate(proc_dict[x.process(),x.bin()]))
 
@@ -69,6 +79,6 @@ for proc in proc_names:
 
 
 #cb.PrintAll() #Print the datacard
-print "Writing datacard '{}'...".format("Datacard_root_test.txt")
-cb.WriteDatacard('Datacard_root_test.txt')
+print "Writing datacard '{}'...".format("Datacard_root.txt")
+cb.WriteDatacard('Datacard_root.txt')
 
