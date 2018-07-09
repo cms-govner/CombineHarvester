@@ -62,11 +62,13 @@ def process_input(infile):
 #    return(categories[:50], ['ttW','ttZ','ttH','tZq','ttbar_dilepton'], proc_dict, sys_types, sys_dict)
     return(categories_best, ['ttH','tZq']+bkgd_names, proc_dict, sys_types, sys_dict)
 
-def process_root_input(infile):
+def process_root_input(infile,operator):
     readfile = ROOT.TFile.Open(infile)
 
     #List of processes to look for
-    proc_known = ['singlet_tWchan','singletbar_tWchan','singlet_tchan','singletbar_tchan','singletop_schan','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','DYlowM','DY','WJets','ttJets','ttW','ttZ','ttH','tZq']
+    #proc_known = ['singlet_tWchan','singletbar_tWchan','singlet_tchan','singletbar_tchan','singletop_schan','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','DYlowM','DY','WJets','ttJets','ttW','ttZ','ttH','tZq']
+    sig_base = ['ttH','tllq','ttll','ttlnu']
+    proc_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']
     data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
 
     #Lists of names to pass on
@@ -80,6 +82,7 @@ def process_root_input(infile):
     proc_dict={} #process,category:nominal rate
     sys_dict={} #process,category:{systematic type:ratio to nominal rate}
 
+
     #Main parsing loop
     for key in readfile.GetListOfKeys():
         hist = readfile.Get(key.GetName())
@@ -90,6 +93,18 @@ def process_root_input(infile):
         if(len(histname)==3): [category,systematic,process] = histname
         if(len(histname)==2): [category,process] = histname
 
+        #Debug
+        #if process == 'ttll_cpt':
+        #    for bin in range(1,hist.GetNbinsX()):
+        #        category_njet = 'C_{0}_{1}j'.format(category,bin)
+        #        bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
+        #        print process,category_njet,bin_yield
+        #if process == 'ttZ':
+        #    for bin in range(1,hist.GetNbinsX()):
+        #        category_njet = 'C_{0}_{1}j'.format(category,bin)
+        #        bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
+        #        print process,category_njet,bin_yield
+
         #Logic for data
         if process in data_known:
             if process not in data_names: data_names.append(process.replace('data_',''))
@@ -99,11 +114,19 @@ def process_root_input(infile):
                 bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
                 data_dict.update({(process,category_njet):bin_yield})
 
-        #Don't process the WC and data hists below (only SM MC)
-        if process not in proc_known: continue
+        #Process yields only for the specificied operator
+        sig_known = [sig + "_" + operator for sig in sig_base]
+        if process not in proc_known+sig_known: continue
+        if process in sig_known:
+            #print "Process:",process,"Hist:",hist.GetName()
+            process = process.rsplit("_",1)[0]
+        #process = process.replace('tllq','tZq')
+        #process = process.replace('ttll','ttZ')
+        #process = process.replace('ttlnu','ttW')
 
         #Logic for the systematic histograms
         if systematic != '':
+            #print "Systematic Hist:",hist.GetName()
             if systematic not in sys_types: sys_types.append(systematic)
 
             for bin in range(1,hist.GetNbinsX()): #Don't look at 0jet bins
@@ -126,6 +149,7 @@ def process_root_input(infile):
 
         #Logic for nominal rates
         else:
+            #print "Nominal Hist:",hist.GetName()
             if process not in proc_names: proc_names.append(process)
             for bin in range(1,hist.GetNbinsX()):
                 category_njet = 'C_{0}_{1}j'.format(category,bin)
@@ -139,11 +163,10 @@ def process_root_input(infile):
         bkgd = 0.
         for proc in proc_names[:-4]:
             bkgd += proc_dict[proc,cat]
-        if bkgd >= 1: categories_nonzero.append(cat)
+        if bkgd >= 0.0001: categories_nonzero.append(cat)
         #else:
             #print "Background less than 1!"
-    #print len(categories_nonzero)
-    
+
     return(categories_nonzero, data_names, data_dict, proc_names, proc_dict, sys_types, sys_dict)
 
         

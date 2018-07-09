@@ -1,9 +1,20 @@
+import sys
 import CombineHarvester.CombineTools.ch as ch
 import CombineHarvester.TopEFT.Process_Input as pi
 
+#Check for coefficient argument
+if len(sys.argv) == 1:
+    raise Exception("Must have WC as an argument.")
+if len(sys.argv) > 2:
+    raise Exception("Only one argument (the WC) is accepted.")
+operators_known = ['ctZ','ctW','ctp','ctl1','ctG','cQe1','cpt','cptb','cpQM','cpQ3']
+if sys.argv[1] not in operators_known:
+    raise Exception("Specified WC not in known list of WC's.")
+    
+
 #Parse input file
 print "Parsing input file..."
-(categories, data_names, data_dict, proc_names, proc_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest4.root')
+(categories, data_names, data_dict, proc_names, proc_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest7.root',sys.argv[1])
 
 #Initialize CombineHarvester instance
 cb = ch.CombineHarvester()
@@ -78,7 +89,13 @@ for proc in proc_names:
                     #cb.cp().process([proc]).bin([cat]).AddSyst(cb,proc+cat+':'+sys_type,'lnN',ch.SystMap()( float(sys_dict[(proc,cat)][sys_type]) ))
 
 
+#Debug
+for cat in categories:
+    proc_debug = 0
+    for proc in proc_names:
+        proc_debug += proc_dict[proc,cat]
+
 #cb.PrintAll() #Print the datacard
-print "Writing datacard '{}'...".format("Datacard_root.txt")
-cb.WriteDatacard('Datacard_root.txt')
+print "Writing datacard '{}'...".format("Datacard_root_"+sys.argv[1]+".txt")
+cb.WriteDatacard('Datacard_root_'+sys.argv[1]+'.txt')
 
