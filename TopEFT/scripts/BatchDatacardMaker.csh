@@ -1,12 +1,12 @@
-python ../scripts/Root_tester.py ctW
-python ../scripts/Root_tester.py ctl1
-python ../scripts/Root_tester.py ctp
-python ../scripts/Root_tester.py cpQM
-python ../scripts/Root_tester.py ctZ
-python ../scripts/Root_tester.py cQe1
-python ../scripts/Root_tester.py ctG
-python ../scripts/Root_tester.py cpQ3
-python ../scripts/Root_tester.py cptb
-python ../scripts/Root_tester.py cpt
+python ../scripts/TopEFT_DatacardMaker.py ctW
+python ../scripts/TopEFT_DatacardMaker.py ctl1
+python ../scripts/TopEFT_DatacardMaker.py ctp
+python ../scripts/TopEFT_DatacardMaker.py cpQM
+python ../scripts/TopEFT_DatacardMaker.py ctZ
+python ../scripts/TopEFT_DatacardMaker.py cQe1
+python ../scripts/TopEFT_DatacardMaker.py ctG
+python ../scripts/TopEFT_DatacardMaker.py cpQ3
+python ../scripts/TopEFT_DatacardMaker.py cptb
+python ../scripts/TopEFT_DatacardMaker.py cpt
 cp Datacard*.txt ../../../EFTFit/Fitter/test/
 echo "Copied Datacards to '../../../EFTFit/Fitter/test/'"
