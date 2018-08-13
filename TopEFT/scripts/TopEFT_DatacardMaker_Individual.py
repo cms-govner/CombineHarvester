@@ -1,23 +1,22 @@
 import sys
 import CombineHarvester.CombineTools.ch as ch
-import CombineHarvester.TopEFT.Process_Input as pi
+import CombineHarvester.TopEFT.Process_Input_Individual as pi
 
 #Check for coefficient argument
-if(0):
-    if len(sys.argv) == 1:
-        raise Exception("Must have WC as an argument.")
-    if len(sys.argv) > 2:
-        raise Exception("Only one argument (the WC) is accepted.")
-    operators_known = ['ctZ','ctW','ctp','ctl1','ctG','cQe1','cpt','cptb','cpQM','cpQ3']
-    if sys.argv[1] not in operators_known:
-        raise Exception("Specified WC not in known list of WC's.")
+if len(sys.argv) == 1:
+    raise Exception("Must have WC as an argument.")
+if len(sys.argv) > 2:
+    raise Exception("Only one argument (the WC) is accepted.")
+operators_known = ['ctZ','ctW','ctp','ctl1','ctG','cQe1','cpt','cptb','cpQM','cpQ3']
+if sys.argv[1] not in operators_known:
+    raise Exception("Specified WC not in known list of WC's.")
 
 debug = 0
     
 
 #Parse input file
-print "Parsing input file..."
-(categories, data_names, data_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest8.root')
+print "Parsing input file for operator",sys.argv[1],"..."
+(categories, data_names, data_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest7.root',sys.argv[1])
 print "Done parsing input file."
 print "Now creating Datacard..."
 
@@ -107,6 +106,6 @@ if debug:
         print cat,signal[cat],background[cat]
 
 #cb.PrintAll() #Print the datacard
-print "Writing datacard '{}'...".format("EFT_MultiDim_Datacard.txt")
-cb.WriteDatacard('EFT_MultiDim_Datacard.txt')
+print "Writing datacard '{}'...".format("Datacard_root_"+sys.argv[1]+".txt")
+cb.WriteDatacard('Datacard_root_'+sys.argv[1]+'.txt')
 
