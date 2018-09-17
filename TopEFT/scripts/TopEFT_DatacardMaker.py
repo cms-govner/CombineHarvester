@@ -16,10 +16,10 @@ debug = 0
     
 
 #Parse input file
-print "Parsing input file..."
-(categories, data_names, data_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest8.root')
+print "Parsing input file!"
+(categories, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest9.root')
 print "Done parsing input file."
-print "Now creating Datacard..."
+print "Now creating Datacard!"
 
 #Initialize CombineHarvester instance
 cb = ch.CombineHarvester()
@@ -37,11 +37,19 @@ chan = [''] # Indistiguishable process subcategories i.e. for MC only
 cats = list(enumerate(categories)) #Process bins. Must be list of tuple like this
 
 #Asimov data
+#obs_rates={}
+#for cat in categories:
+#    cat_asimov = 0
+#    for proc in sgnl_names+bkgd_names:
+#        cat_asimov += nom_dict[proc,cat]
+#    obs_rates[cat]=cat_asimov
+
+#Fake data
 obs_rates={}
 for cat in categories:
     cat_asimov = 0
     for proc in sgnl_names+bkgd_names:
-        cat_asimov += nom_dict[proc,cat]
+        cat_asimov += fakedata_dict[proc,cat]
     obs_rates[cat]=cat_asimov
 
 #Actual data (hists not currently filled, but placeholders are present)
@@ -73,6 +81,14 @@ for proc in sgnl_names+bkgd_names:
     for cat in categories:
         #Lumi uncertainty (fully correlated, identical for all categories)
         cb.cp().process([proc]).bin([cat]).AddSyst(cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
+        #MCStats uncertainty (fully correlated)
+        cb.cp().process([proc]).bin([cat]).AddSyst(cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
+        #PDF uncertainty (fully correlated, identical for all signal, only signal)
+        if proc in sgnl_names: cb.cp().process([proc]).bin([cat]).AddSyst(cb,'PDF','lnN',ch.SystMap()( 1.015 ))
+        #Charge Flip rate uncertainty (fully correlated, identical for all categories, Charge Flip only)
+        if proc=='charge_flips': cb.cp().process([proc]).bin([cat]).AddSyst(cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
+        #Fake rate uncertainty (fully correlated, asymmetric, Fakes only)
+        if proc=='fakes': cb.cp().process([proc]).bin([cat]).AddSyst(cb,'Fakes','lnN',ch.SystMap()( [sys_dict[(proc,cat)]['FRUP'], sys_dict[(proc,cat)]['FRDOWN']] ))
         #JES uncertainty (fully correlated, asymmetric)
         cb.cp().process([proc]).bin([cat]).AddSyst(cb,'JES','lnN',ch.SystMap()( [sys_dict[(proc,cat)]['JESUP'], sys_dict[(proc,cat)]['JESDOWN']]))
         if (proc,cat) in sys_dict.keys(): # probably unnecessary safeguard
