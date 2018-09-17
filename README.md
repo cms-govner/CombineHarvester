@@ -21,24 +21,17 @@ A new full release area can be set up and compiled in the following steps:
 
 ## Make the Datacard
 
-The main script is named "Top_EFT_Maker.py". This creates a datacard from an input text file. To run it:
+The main script is named "TopEFT_DatacardMaker.py". This creates a datacard from our ROOT trees. To run it:
 
     cd CombineHarvester/TopEFT/test
-    python ../scripts/Top_EFT_Maker.py
+    python ../scripts/TopEFT_DatacardMaker.py
     
-Alternatively, a datacard can be made from root files.
-
-    cd CombineHarvester/TopEFT/test
-    python ../scripts/Root_tester.py
-    
-The resulting datacard will be created in your current directory (.../test/)
+The resulting datacard will be created in the current directory (.../test/)
 
 ## Do some fits
 
 For the full suite of fitting scripts, see https://github.com/cms-govner/EFTFit
 
-These datacards can be fit with the usual combine commands, but we have a test script to do a simulataneous 4D fit on the four signal processes (ttZ, ttW, ttH, tZq). It first makes a workspace, then does a MultiDimFit. To run it (from "test"):
+To quickly transfer the datacard to that diretory for fitting, use:
 
-    source ../scripts/4DFit.csh
-
-Note there are two places toward the end of the output that give the best fit mus. This is because an increase in verbosity is required to spit out the uncertainties.
+    source ../scripts/transfer.csh
