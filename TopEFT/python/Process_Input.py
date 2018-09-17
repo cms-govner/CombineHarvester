@@ -3,9 +3,8 @@ import math
 import ROOT
 ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so')
 
-def process_root_input(infile):
+def process_root_input(infile,fake_data):
     print "Setting up..."
-    fake_data = True
     readfile = ROOT.TFile.Open(infile)
 
     #List of processes to look for
@@ -169,13 +168,13 @@ def process_root_input(infile):
             if bkgd >= 0.0001:
                 categories_nonzero.append(cat)
             else:
-                print "Skipping",cat,"for low bkgd yield."
+                print "Skipping",cat,"for low backgroud yield."
         else:
-            print "Skipping",cat,"for low sgnl yield."
+            print "Skipping",cat,"for low signal yield."
         #if cat == 'C_2lss_m_emu_2b_5j': print bkgd,sgnl,bkgd+sgnl # Debug
 
     #categories_nonzero = ['C_2lss_m_emu_2b_5j'] # Override for debug
-    print categories_nonzero
+    print "Categories:",categories_nonzero
     print "Signals:",sgnl_names
     print "Backgrounds:",bkgd_names
     #print data_dict

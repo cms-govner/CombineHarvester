@@ -26,7 +26,11 @@ The main script is named "TopEFT_DatacardMaker.py". This creates a datacard from
     cd CombineHarvester/TopEFT/test
     python ../scripts/TopEFT_DatacardMaker.py
     
-The resulting datacard will be created in the current directory (.../test/)
+The resulting datacard will be created in the current directory (.../test/) and named "EFT_MultiDim_Datacard.txt"
+
+## Using asimov or fake data
+
+By default, this datacard sets the observation to be fake data for 16 EFT operators set to 1.0. To use fewer operators in the fake data, swap L32-33 of Process_Input.py. To use SM asimov data instead, add 0 as an argument to the TopEFT_DatacardMaker.py call.
 
 ## Do some fits
 

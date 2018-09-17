@@ -3,21 +3,16 @@ import CombineHarvester.CombineTools.ch as ch
 import CombineHarvester.TopEFT.Process_Input as pi
 
 #Check for coefficient argument
-if(0):
-    if len(sys.argv) == 1:
-        raise Exception("Must have WC as an argument.")
-    if len(sys.argv) > 2:
-        raise Exception("Only one argument (the WC) is accepted.")
-    operators_known = ['ctZ','ctW','ctp','ctl1','ctG','cQe1','cpt','cptb','cpQM','cpQ3']
-    if sys.argv[1] not in operators_known:
-        raise Exception("Specified WC not in known list of WC's.")
+fake_data = True
+if len(sys.argv) == 2:
+    fake_data = sys.argv[1]
 
 debug = 0
     
 
 #Parse input file
 print "Parsing input file!"
-(categories, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest9.root')
+(categories, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = pi.process_root_input('../data/anatest9.root',fake_data)
 print "Done parsing input file."
 print "Now creating Datacard!"
 
@@ -36,21 +31,24 @@ chan = [''] # Indistiguishable process subcategories i.e. for MC only
 
 cats = list(enumerate(categories)) #Process bins. Must be list of tuple like this
 
-#Asimov data
-#obs_rates={}
-#for cat in categories:
-#    cat_asimov = 0
-#    for proc in sgnl_names+bkgd_names:
-#        cat_asimov += nom_dict[proc,cat]
-#    obs_rates[cat]=cat_asimov
 
-#Fake data
+
+#Fill observation
 obs_rates={}
-for cat in categories:
-    cat_asimov = 0
-    for proc in sgnl_names+bkgd_names:
-        cat_asimov += fakedata_dict[proc,cat]
-    obs_rates[cat]=cat_asimov
+#Fake data
+if fake_data:
+    for cat in categories:
+        cat_asimov = 0
+        for proc in sgnl_names+bkgd_names:
+            cat_asimov += fakedata_dict[proc,cat]
+        obs_rates[cat]=cat_asimov
+#Asimov data
+else:
+    for cat in categories:
+        cat_asimov = 0
+        for proc in sgnl_names+bkgd_names:
+            cat_asimov += nom_dict[proc,cat]
+        obs_rates[cat]=cat_asimov
 
 #Actual data (hists not currently filled, but placeholders are present)
 #obs_rates={}
