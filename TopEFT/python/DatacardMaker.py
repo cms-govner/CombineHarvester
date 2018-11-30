@@ -13,12 +13,12 @@ class DatacardMaker(object):
         self.cb.SetVerbosity(0)
 
         self.debug = 0
-        self.eras = ['2016']    #Data eras
+        self.eras = ['2017']    #Data eras
         self.chan = ['']        #Indistiguishable process subcategories i.e. for MC only
 
         self.outf = "EFT_MultiDim_Datacard.txt"
 
-    def make(self,infile,fake_data=True):
+    def make(self,infile,fake_data=False):
         self.logger.info("Parsing input file!")
         (categories, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = self.hp.process(infile,fake_data)
         self.logger.info("Done parsing input file")
@@ -30,6 +30,7 @@ class DatacardMaker(object):
         obs_rates={}
         #Fake data
         if fake_data:
+            self.logger.info("Using fake data")
             for cat in categories:
                 cat_asimov = 0
                 for proc in sgnl_names+bkgd_names:
@@ -69,42 +70,62 @@ class DatacardMaker(object):
         #Fill systematic rates
         for proc in sgnl_names+bkgd_names:
             self.logger.info("Adding systematics for %s...",proc)
+
+            #PDF/Q2 rate uncertainty values
+            PDFrate = 1.0
+            Q2rate = [1.0,1.0]
+            if proc=='ttH':
+                PDFrate = 1.036
+                Q2rate  = [0.908,1.058]
+            if proc=='ttlnu':
+                PDFrate = 1.02
+                Q2rate  = [0.88,1.13]
+            if proc=='ttll':
+                PDFrate = 1.03
+                Q2rate  = [0.88,1.10]
+            if proc in ['singlet_tWchan','singletbar_tWchan']:
+                PDFrate = 1.03
+                Q2rate  = [0.98,1.03]
+            if proc=='tllq': # V+jets??
+                PDFrate = 1.04
+                Q2rate  = [0.99,1.01]
+            if proc in ['WZ','ZZ','WW']:
+                PDFrate = 1.02
+                Q2rate  = [0.98,1.02]
+            if proc in ['charge_flips','fakes']:
+                PDFrate = 1.0
+                Q2rate  = [1.0,1.0]
+
             for cat in categories:
-                #Lumi uncertainty (fully correlated, identical for all categories)
-                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
-                #MCStats uncertainty (fully correlated)
+                #MCStats uncertainty (fully correlated, taken from nominal bin errors)
                 self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
-                #PDF uncertainty (fully correlated, identical for all signal, only signal)
-                if proc in sgnl_names: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF','lnN',ch.SystMap()( 1.015 ))
-                #Charge Flip rate uncertainty (fully correlated, identical for all categories, Charge Flip only)
+                #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
+                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
+                #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
                 if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
-                #Fake rate uncertainty (fully correlated, asymmetric, Fakes only)
-                if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Fakes','lnN',ch.SystMap()( [sys_dict[(proc,cat)]['FRUP'], sys_dict[(proc,cat)]['FRDOWN']] ))
-                #JES uncertainty (fully correlated, asymmetric)
-                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'JES','lnN',ch.SystMap()( [sys_dict[(proc,cat)]['JESUP'], sys_dict[(proc,cat)]['JESDOWN']]))
-                if (proc,cat) in sys_dict.keys(): # probably unnecessary safeguard
-                    #Other systematics -- To be added
-                    for sys_type in sys_types:
-                        #Fully correlated systematics listed by rate
-                        if sys_type in []:
-                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_type,'lnN',ch.SystMap()( sys_dict[(proc,cat)][sys_type] ))
-                        #Systematics listed by their fluctuations
-                        elif sys_type in ['pdfUP']:
-                            unc = (nom_dict[proc,cat]+sys_dict[proc,cat][sys_type])/nom_dict[proc,cat] if sys_dict[proc,cat][sys_type]>0. else 1.0000
-                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_type.rstrip('UP'),'lnN',ch.SystMap()(unc))
-                        #Shape systematics (not used in counting experiment)
-                        #elif sys_type in ['MCStatUP','MCStatDOWN','Q2UP','Q2DOWN']:
-                        #Superfluous systematics
-                        #Fully uncorrelated systematics
-                        #else:
-                            #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,proc+cat+':'+sys_type,'lnN',ch.SystMap()( float(sys_dict[(proc,cat)][sys_type]) ))
+                #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
+                if proc=='ttH': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_ggttH','lnN',ch.SystMap()( PDFrate ))
+                if proc in ['ttll']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_gg','lnN',ch.SystMap()( PDFrate ))
+                if proc in ['ttlnu','tllq','WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_qq','lnN',ch.SystMap()( PDFrate ))
+                if proc in ['singlet_tWchan','singletbar_tWchan']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_qg','lnN',ch.SystMap()( PDFrate ))
+                #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
+                if proc=='ttH': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_ttH','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_tt','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['singlet_tWchan','singletbar_tWchan']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_t','lnN',ch.SystMap()( Q2rate ))
+                if proc=='tllq': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_V','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_VV','lnN',ch.SystMap()( Q2rate ))
+                #Standard uncertainties with usual UP/DOWN variations
+                #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID
+                for sys in sys_types:
+                    if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
+                    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'UP'], sys_dict[(proc,cat)][sys+'DOWN']]))
 
         #Printout of signal and background yields (debug)
         if self.debug:
             background = {}
             signal = {}
             print ""
-            self.logger.debug("Category, signal yield, background yield:")
+            self.logger.debug("\nCategory, signal yield, background yield:")
             for cat in categories:
                 background[cat] = 0
                 signal[cat] = 0
@@ -158,11 +179,22 @@ if __name__ == "__main__":
     logging.getLogger('').addHandler(console)
 
     # Check for coefficient argument
-    fake_data = True
+    fake_data = False
     if len(sys.argv) == 2:
-        fake_data = sys.argv[1]
+        if sys.argv[1] in ['True', 'true', '1']:
+            fake_data = True
+        elif sys.argv[1] in ['False', 'false', '0']:
+            fake_data = False
+        else:
+            logging.error("Value of argument 1 unrecognized!")
+            sys.exit()
+    if len(sys.argv) > 2:
+        logging.error("Only one argument allowed!")
+        sys.exit()
+
+    # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../data/anatest9.root',fake_data)
+    dm.make('../data/anatest10.root',fake_data)
 
     logging.info("Logger shutting down!")
     logging.shutdown()

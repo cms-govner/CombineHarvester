@@ -8,21 +8,26 @@ class HistogramProcessor(object):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
-        self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']
+        self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','singlet_tWchan','singletbar_tWchan','convs']
         self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
 
-        #List of operators for fake data
-        self.operators_known = [
+        # Initialize reweight point for fake data
+        # Default to all operators = 1
+        WCPoint_string = 'fakedata'
+        operators_fakedata = [
             'cQe1','cQl31','cQlM1','cbW','cpQ3','cpQM','cpt','cptb',
             'ctG','ctW','ctZ','cte1','ctl1','ctlS1','ctlT1','ctp'
         ]
-
-        self.rwgt_pt = ROOT.WCPoint()
+        for op in operators_fakedata:
+            WCPoint_string += '_{op}_1'.format(op=op)
+            #if op == 'ctZ': WCPoint_string += '_{op}_1'.format(op=op)
+            #if op == 'ctW': WCPoint_string += '_{op}_0'.format(op=op)
+        self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
         self.sm_pt = ROOT.WCPoint()
 
     def setReweightPoint(self,d):
         for wc,v in d.iteritems():
-            if not wc in self.operators_known:
+            if not wc in self.operators_fakedata:
                 continue
             self.rwgt_pt.setStrength(wc,v)
 
@@ -45,8 +50,9 @@ class HistogramProcessor(object):
 
         debug_processes = []    # Ex: 'ttll_cpt','ttZ'
         debug_categories = []   # Ex: 'C_2lss_m_emu_2b_5j'
+
         if fake_data:
-            self.logger.info("Using operators %s for fake data.",self.operators_known)
+            self.logger.info("Using operators %s for fake data.",self.operators_fakedata)
 
         self.logger.info("Looping through histograms...")
 
@@ -93,25 +99,18 @@ class HistogramProcessor(object):
             # Logic for the nominal histograms
             if systematic == '':
                 self.logger.debug("Nominal Hist: %s",hist.GetName())
-                debug_count=0
                 for bin in range(1,hist.GetNbinsX()):
                     # MC Nominal
                     category_njet = 'C_{0}_{1}j'.format(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
-                    #bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
                     bin_yield = round(hist.GetBinContent(1+bin,self.sm_pt),4)
-                    debug_count += bin_yield
                     nom_dict.update({(process,category_njet):bin_yield})
                     # Fake data
-                    WCPoint_string = 'fakedata'
-                    for op in self.operators_known:
-                        WCPoint_string += '_{op}_1'.format(op=op)
-                    #fakedata_bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint(WCPoint_string,1.0)),4)
-                    fakedata_bin_yield = round(hist.GetBinContent(1+bin,self.rwgt_pt),4)
-                    fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
+                    if fake_data:
+                        fakedata_bin_yield = round(hist.GetBinContent(1+bin,self.rwgt_pt),4)
+                        fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
 
                 # Get MCStats uncertainty
-                if 'MCSTATS' not in sys_types: sys_types.append('MCSTATS')
                 for bin in range(1,hist.GetNbinsX()): #Don't look at 0jet bins
                     #Check category exists. This is probably redundant as if it doesn't, it should give an error when calculating the ratio
                     category_njet = 'C_{0}_{1}j'.format(category,bin)
@@ -122,7 +121,6 @@ class HistogramProcessor(object):
                     #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
-                        #bin_yield = round(hist.GetBinFit(1+bin).evalPointError(ROOT.WCPoint()),4)
                         bin_yield = round(hist.GetBinFit(1+bin).evalPointError(self.sm_pt),4)
                         bin_ratio = 1+bin_yield/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
@@ -148,10 +146,15 @@ class HistogramProcessor(object):
                     #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
-                        #bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
                         bin_yield = round(hist.GetBinContent(1+bin,self.sm_pt),4)
                         bin_ratio = bin_yield/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
+
+                        #Special case for fake rate uncertainty; average effect over all njets bins
+                        if systematic in ['FRUP','FRDOWN']:
+                            bin_yield = hist.Integral(1,hist.GetNbinsX())
+                            bin_ratio = round(bin_yield/readfile.Get(process+category).Integral(1,hist.GetNbinsX()),4)
+                            bin_ratio = max(bin_ratio,0.0001)
 
                     #Create sys_dict key if it doesn't exit; can't edit a dict object that doesn't exist yet
                     if not sys_dict.has_key((process,category_njet)):
@@ -170,8 +173,8 @@ class HistogramProcessor(object):
             for proc in sgnl_names:
                 sgnl += nom_dict[proc,cat]
                 if cat in debug_categories: self.logger.debug("%s %s",proc,str(nom_dict[proc,cat]))
-            if sgnl >= 0.0001:
-                if bkgd >= 0.0001:
+            if sgnl >= 0.1:
+                if bkgd >= 0.1:
                     categories_nonzero.append(cat)
                 else:
                     self.logger.info("Skipping %s for low background yield.",cat)
