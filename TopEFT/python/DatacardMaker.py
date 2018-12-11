@@ -139,20 +139,39 @@ class DatacardMaker(object):
         self.logger.info("Writing datacard '%s'...",self.outf)
         self.cb.WriteDatacard(self.outf)
 
-    ################################################################################################
+    ##############################
+    # Getter/Setter methods (mostly just pass-throughs)
+    ##############################
 
     def setOperators(self,lst):
-        self.hp.operators_known = lst
+        self.hp.setOperators(lst)
 
     def setReweightPoint(self,d):
         self.hp.setReweightPoint(d)
 
     def setSignalProcesses(self,lst):
-        self.hp.sgnl_known = lst
+        self.hp.setSignalProcesses(lst)
 
     def setBackgroundProcesses(self,lst):
-        self.bkgd_known = lst
+        self.hp.setBackgroundProcesses(lst)
 
+    def setDatasets(self,lst):
+        self.hp.setDatasets(lst)
+
+    def getOperators(self):
+        return self.hp.getOperators()
+
+    def getReweightPoint(self):
+        return self.hp.getReweightPoint()
+
+    def getSignalProcesses(self):
+        return self.hp.getSignalProcesses()
+
+    def getBackgroundProcesses(self):
+        return self.hp.getBackgroundProcesses()
+
+    def getDatasets(self):
+        return self.hp.getDatasets()
 
 if __name__ == "__main__":
     log_file = 'out.log'

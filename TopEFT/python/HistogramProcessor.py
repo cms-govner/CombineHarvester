@@ -25,12 +25,6 @@ class HistogramProcessor(object):
         self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
         self.sm_pt = ROOT.WCPoint()
 
-    def setReweightPoint(self,d):
-        for wc,v in d.iteritems():
-            if not wc in self.operators_fakedata:
-                continue
-            self.rwgt_pt.setStrength(wc,v)
-
     def process(self,infile,fake_data):
         self.logger.info("Setting up...")
         readfile = ROOT.TFile.Open(infile)
@@ -192,3 +186,41 @@ class HistogramProcessor(object):
         #print nom_dict
 
         return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
+
+    ##############################
+    # Getter/Setter methods
+    ##############################
+
+    def setOperators(self,lst):
+        self.operators_fakedata = lst
+
+    def setReweightPoint(self,d):
+        self.rwgt_pt.setSMPoint()   # Reset all WC strengths to 0
+        for wc,v in d.iteritems():
+            if not wc in self.operators_fakedata:
+                continue
+            self.rwgt_pt.setStrength(wc,v)
+
+    def setSignalProcesses(self,lst):
+        self.sgnl_known = lst
+
+    def setBackgroundProcesses(self,lst):
+        self.bkgd_known = lst
+
+    def setDatasets(self,lst):
+        self.data_known = lst
+
+    def getOperators(self):
+        return self.operators_fakedata
+
+    def getReweightPoint(self):
+        return self.rwgt_pt
+
+    def getSignalProcesses(self):
+        return self.sgnl_known
+
+    def getBackgroundProcesses(self):
+        return self.bkgd_known
+
+    def getDatasets(self):
+        return self.data_known
