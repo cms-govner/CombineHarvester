@@ -14,11 +14,11 @@ class HistogramProcessor(object):
         # Initialize reweight point for fake data
         # Default to all operators = 1
         WCPoint_string = 'fakedata'
-        operators_fakedata = [
+        self.operators_fakedata = [
             'cQe1','cQl31','cQlM1','cbW','cpQ3','cpQM','cpt','cptb',
             'ctG','ctW','ctZ','cte1','ctl1','ctlS1','ctlT1','ctp'
         ]
-        for op in operators_fakedata:
+        for op in self.operators_fakedata:
             WCPoint_string += '_{op}_1'.format(op=op)
             #if op == 'ctZ': WCPoint_string += '_{op}_1'.format(op=op)
             #if op == 'ctW': WCPoint_string += '_{op}_0'.format(op=op)
@@ -53,6 +53,8 @@ class HistogramProcessor(object):
 
         if fake_data:
             self.logger.info("Using operators %s for fake data.",self.operators_fakedata)
+        else:
+            self.logger.info("Not using fake data. #CURRENTLY SM PREDICTION, not real data#")
 
         self.logger.info("Looping through histograms...")
 
@@ -173,8 +175,8 @@ class HistogramProcessor(object):
             for proc in sgnl_names:
                 sgnl += nom_dict[proc,cat]
                 if cat in debug_categories: self.logger.debug("%s %s",proc,str(nom_dict[proc,cat]))
-            if sgnl >= 0.1:
-                if bkgd >= 0.1:
+            if sgnl >= 0.01:
+                if bkgd >= 0.01:
                     categories_nonzero.append(cat)
                 else:
                     self.logger.info("Skipping %s for low background yield.",cat)
