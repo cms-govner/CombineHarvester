@@ -15,8 +15,8 @@ class HistogramProcessor(object):
         # Default to all operators = 1
         WCPoint_string = 'fakedata'
         self.operators_fakedata = [
-            'cQe1','cQl31','cQlM1','cbW','cpQ3','cpQM','cpt','cptb',
-            'ctG','ctW','ctZ','cte1','ctl1','ctlS1','ctlT1','ctp'
+            'ctW','ctp','cpQM','ctZ','ctG','cbW','cpQ3','cptb',
+            'cpt','cQl3i','cQlMi','cQei','ctli','ctei','ctlSi','ctlTi'
         ]
         for op in self.operators_fakedata:
             WCPoint_string += '_{op}_1'.format(op=op)
@@ -106,7 +106,7 @@ class HistogramProcessor(object):
                         fakedata_bin_yield = round(hist.GetBinContent(1+bin,self.rwgt_pt),4)
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
 
-                # Get MCStats uncertainty
+                # Get MCStats uncertainty for the nominal histograms
                 for bin in range(1,hist.GetNbinsX()): #Don't look at 0jet bins
                     #Check category exists. This is probably redundant as if it doesn't, it should give an error when calculating the ratio
                     category_njet = 'C_{0}_{1}j'.format(category,bin)
@@ -117,7 +117,10 @@ class HistogramProcessor(object):
                     #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
-                        bin_yield = round(hist.GetBinFit(1+bin).evalPointError(self.sm_pt),4)
+                        if process in self.sgnl_known: # Determined by TH1EFT fit
+                            bin_yield = round(hist.GetBinFit(1+bin).evalPointError(self.sm_pt),4)
+                        if process in self.bkgd_known: # Determined by sqrt(yield)
+                            bin_yield = round(math.sqrt(max(0,hist.GetBinContent(1+bin,self.sm_pt))),4)
                         bin_ratio = 1+bin_yield/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
 
@@ -156,6 +159,12 @@ class HistogramProcessor(object):
                     if not sys_dict.has_key((process,category_njet)):
                         sys_dict[(process,category_njet)] = {}
                     sys_dict[(process,category_njet)][systematic] = bin_ratio
+
+                #Append systematic type to list, but don't split into UP/DOWN
+                sys_type = systematic
+                if systematic.endswith('UP'): sys_type = systematic[:-2]
+                elif systematic.endswith('DOWN'): sys_type = systematic[:-4]
+                if sys_type not in sys_types: sys_types.append(sys_type)
 
         # Only analyze categories with at least a few background events to prevent negative yields
         self.logger.info("Getting final categories...")
