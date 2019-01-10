@@ -21,16 +21,16 @@ A new full release area can be set up and compiled in the following steps:
 
 ## Make the Datacard
 
-The main script is named "TopEFT_DatacardMaker.py". This creates a datacard from our ROOT trees. To run it:
+The main script is named "DatacardMaker.py". This creates a datacard from our ROOT trees. To run it:
 
     cd CombineHarvester/TopEFT/test
-    python ../scripts/TopEFT_DatacardMaker.py
+    python ../python/DatacardMaker.py
     
 The resulting datacard will be created in the current directory (.../test/) and named "EFT_MultiDim_Datacard.txt"
 
 ## Using asimov or fake data
 
-By default, this datacard sets the observation to be fake data for 16 EFT operators set to 1.0. To use fewer operators in the fake data, swap L32-33 of Process_Input.py. To use SM asimov data instead, add 0 as an argument to the TopEFT_DatacardMaker.py call.
+By default, this script sets the observation to the SM expectation. If DatacardMarker is given an argument of 1/True, the obeservation will instead be fake data for 16 EFT operators set to 1.0. To use a different WC point, use the function "setReweightPoint".
 
 ## Do some fits
 
