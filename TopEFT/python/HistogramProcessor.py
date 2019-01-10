@@ -152,7 +152,7 @@ class HistogramProcessor(object):
                         #Special case for fake rate uncertainty; average effect over all njets bins
                         if systematic in ['FRUP','FRDOWN']:
                             bin_yield = hist.Integral(1,hist.GetNbinsX())
-                            bin_ratio = round(bin_yield/readfile.Get(process+category).Integral(1,hist.GetNbinsX()),4)
+                            bin_ratio = round(bin_yield/readfile.Get(category+'.'+process).Integral(1,hist.GetNbinsX()),4)
                             bin_ratio = max(bin_ratio,0.0001)
 
                     #Create sys_dict key if it doesn't exit; can't edit a dict object that doesn't exist yet
