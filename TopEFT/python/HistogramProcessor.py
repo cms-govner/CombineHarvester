@@ -8,7 +8,7 @@ class HistogramProcessor(object):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
-        self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','singlet_tWchan','singletbar_tWchan','convs']
+        self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','singlet_tWchan','singletbar_tWchan','ttGJets']
         self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
 
         # Initialize reweight point for fake data
@@ -24,6 +24,14 @@ class HistogramProcessor(object):
             #if op == 'ctW': WCPoint_string += '_{op}_0'.format(op=op)
         self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
         self.sm_pt = ROOT.WCPoint()
+
+    def name_bin(self,category,bin):
+        if "2lss" in category:
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+3)
+        if "3l" in category:
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+1)
+        if "4l" in category:
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin)
 
     def process(self,infile,fake_data):
         self.logger.info("Setting up...")
@@ -63,20 +71,20 @@ class HistogramProcessor(object):
             if(len(histname)==2): [category,process] = histname
 
             if process in debug_processes:
-                for bin in range(1,hist.GetNbinsX()):
-                    category_njet = 'C_{0}_{1}j'.format(category,bin)
+                for bin in range(1,5): # Doesn't include bin 5
+                    category_njet = self.name_bin(category,bin)
                     #bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
-                    bin_yield = round(hist.GetBinContent(1+bin,self.sm_pt),4)
+                    bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
 
             #Logic for data NOT VERIFIED
             if process in self.data_known:
                 if process not in data_names: data_names.append(process.replace('data_',''))
-                for bin in range(1,hist.GetNbinsX()):
-                    category_njet = 'C_{0}_{1}j'.format(category,bin)
+                for bin in range(1,5): # Doesn't include bin 5
+                    category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
                     #bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
-                    bin_yield = round(hist.GetBinContent(1+bin,self.sm_pt),4)
+                    bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     data_dict.update({(process,category_njet):bin_yield})
 
             # Logic for MC yields below
@@ -95,11 +103,12 @@ class HistogramProcessor(object):
             # Logic for the nominal histograms
             if systematic == '':
                 self.logger.debug("Nominal Hist: %s",hist.GetName())
-                for bin in range(1,hist.GetNbinsX()):
+                for bin in range(1,5): # Doesn't include bin 5
                     # MC Nominal
-                    category_njet = 'C_{0}_{1}j'.format(category,bin)
+                    category_njet = self.name_bin(category,bin)
+                    self.logger.info("Bin "+str(bin)+" name is "+category_njet)
                     if category_njet not in categories: categories.append(category_njet)
-                    bin_yield = round(hist.GetBinContent(1+bin,self.sm_pt),4)
+                    bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     nom_dict.update({(process,category_njet):bin_yield})
                     # Fake data
                     if fake_data:
@@ -107,9 +116,9 @@ class HistogramProcessor(object):
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
 
                 # Get MCStats uncertainty for the nominal histograms
-                for bin in range(1,hist.GetNbinsX()): #Don't look at 0jet bins
+                for bin in range(1,5): # Doesn't include bin 5
                     #Check category exists. This is probably redundant as if it doesn't, it should give an error when calculating the ratio
-                    category_njet = 'C_{0}_{1}j'.format(category,bin)
+                    category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
 
                     #Calculate ratio to nominal
@@ -118,9 +127,9 @@ class HistogramProcessor(object):
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
                         if process in self.sgnl_known: # Determined by TH1EFT fit
-                            bin_yield = round(hist.GetBinFit(1+bin).evalPointError(self.sm_pt),4)
+                            bin_yield = round(hist.GetBinFit(bin).evalPointError(self.sm_pt),4)
                         if process in self.bkgd_known: # Determined by sqrt(yield)
-                            bin_yield = round(math.sqrt(max(0,hist.GetBinContent(1+bin,self.sm_pt))),4)
+                            bin_yield = round(math.sqrt(max(0,hist.GetBinContent(bin,self.sm_pt))),4)
                         bin_ratio = 1+bin_yield/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
 
@@ -134,10 +143,10 @@ class HistogramProcessor(object):
                 self.logger.debug("Systematic Hist: %s",hist.GetName())
                 if systematic not in sys_types: sys_types.append(systematic)
 
-                for bin in range(1,hist.GetNbinsX()): #Don't look at 0jet bins
+                for bin in range(1,5): # Doesn't include bin 5
                     # Check category exists. This is probably redundant as if it doesn't, it should 
                     #   give an error when calculating the ratio
-                    category_njet = 'C_{0}_{1}j'.format(category,bin)
+                    category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
 
                     #Calculate ratio to nominal
@@ -145,7 +154,7 @@ class HistogramProcessor(object):
                     #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
-                        bin_yield = round(hist.GetBinContent(1+bin,self.sm_pt),4)
+                        bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                         bin_ratio = bin_yield/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
 
