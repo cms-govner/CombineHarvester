@@ -73,7 +73,6 @@ class HistogramProcessor(object):
             if process in debug_processes:
                 for bin in range(1,5): # Doesn't include bin 5
                     category_njet = self.name_bin(category,bin)
-                    #bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
 
@@ -83,7 +82,6 @@ class HistogramProcessor(object):
                 for bin in range(1,5): # Doesn't include bin 5
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
-                    #bin_yield = round(hist.GetBinContent(1+bin,ROOT.WCPoint()),4)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     data_dict.update({(process,category_njet):bin_yield})
 
@@ -106,13 +104,12 @@ class HistogramProcessor(object):
                 for bin in range(1,5): # Doesn't include bin 5
                     # MC Nominal
                     category_njet = self.name_bin(category,bin)
-                    self.logger.info("Bin "+str(bin)+" name is "+category_njet)
                     if category_njet not in categories: categories.append(category_njet)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     nom_dict.update({(process,category_njet):bin_yield})
                     # Fake data
                     if fake_data:
-                        fakedata_bin_yield = round(hist.GetBinContent(1+bin,self.rwgt_pt),4)
+                        fakedata_bin_yield = round(hist.GetBinContent(bin,self.rwgt_pt),4)
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
 
                 # Get MCStats uncertainty for the nominal histograms
@@ -196,7 +193,6 @@ class HistogramProcessor(object):
                 self.logger.info("Skipping %s for low signal yield.",cat)
             if cat in debug_categories: self.logger.debug("%s %s %s",str(bkgd),str(sgnl),str(bkgd+sgnl))
 
-        #categories_nonzero = ['C_2lss_m_emu_2b_5j'] # Override for debug
         self.logger.info("Categories: %s",str(categories_nonzero))
         self.logger.info("Signals: %s",str(sgnl_names))
         self.logger.info("Backgrounds: %s",str(bkgd_names))
