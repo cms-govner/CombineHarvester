@@ -74,46 +74,54 @@ class DatacardMaker(object):
             #PDF/Q2 rate uncertainty values
             PDFrate = 1.0
             Q2rate = [1.0,1.0]
-            if proc=='ttH':
+            if proc=='ttH': # Done
                 PDFrate = 1.036
                 Q2rate  = [0.908,1.058]
-            if proc=='ttlnu':
+            if proc=='ttlnu': # Done
                 PDFrate = 1.02
                 Q2rate  = [0.88,1.13]
-            if proc=='ttll':
+            if proc=='ttll': # Done
                 PDFrate = 1.03
                 Q2rate  = [0.88,1.10]
-            if proc in ['singlet_tWchan','singletbar_tWchan']:
-                PDFrate = 1.03
-                Q2rate  = [0.98,1.03]
-            if proc=='tllq': # V+jets??
+            if proc=='tllq': # V+jets?? Uncertain!
                 PDFrate = 1.04
                 Q2rate  = [0.99,1.01]
-            if proc in ['WZ','ZZ','WW']:
+            if proc in ['singlet_tWchan','singletbar_tWchan']: # Done
+                PDFrate = 1.03
+                Q2rate  = [0.98,1.03]
+            if proc in ['WZ','ZZ','WW']: # Done
                 PDFrate = 1.02
                 Q2rate  = [0.98,1.02]
-            if proc in ['charge_flips','fakes']:
+            if proc in ['WWW','WWZ','WZZ','ZZZ']: # Unknown; conservative here
+                PDFrate = 1.05
+                Q2rate  = [0.95,1.05]
+            if proc in ['charge_flips','fakes']: # Data-drive, so none
                 PDFrate = 1.0
                 Q2rate  = [1.0,1.0]
+            if proc in ['ttGJets']: # Unknown; conservative here
+                PDFrate = 1.5
+                Q2rate = [0.90,1.10]
 
             for cat in categories:
                 #MCStats uncertainty (fully correlated, taken from nominal bin errors)
-                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
+                #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
                 #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
                 self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
                 #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
                 if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
                 #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                if proc=='ttH': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_ggttH','lnN',ch.SystMap()( PDFrate ))
-                if proc in ['ttll']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_gg','lnN',ch.SystMap()( PDFrate ))
-                if proc in ['ttlnu','tllq','WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_qq','lnN',ch.SystMap()( PDFrate ))
+                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_ggttH','lnN',ch.SystMap()( PDFrate ))
+                if proc in ['ttll','ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_gg','lnN',ch.SystMap()( PDFrate ))
+                if proc in ['ttlnu','tllq','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_qq','lnN',ch.SystMap()( PDFrate ))
                 if proc in ['singlet_tWchan','singletbar_tWchan']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_qg','lnN',ch.SystMap()( PDFrate ))
                 #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                if proc=='ttH': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_ttH','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_ttH','lnN',ch.SystMap()( Q2rate ))
                 if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_tt','lnN',ch.SystMap()( Q2rate ))
                 if proc in ['singlet_tWchan','singletbar_tWchan']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_t','lnN',ch.SystMap()( Q2rate ))
-                if proc=='tllq': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_V','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_V','lnN',ch.SystMap()( Q2rate ))
                 if proc in ['WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_VV','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_VVV','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_ttG','lnN',ch.SystMap()( Q2rate ))
                 #Standard uncertainties with usual UP/DOWN variations
                 #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID
                 for sys in sys_types:
@@ -213,7 +221,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest11.root',fake_data)
+    dm.make('../hist_files/anatest12_Jan18btagReqs.root',fake_data)
 
     logging.info("Logger shutting down!")
     logging.shutdown()
