@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest12_Jan18btagReqs.root',fake_data)
+    dm.make('../hist_files/anatest13.root',fake_data)
 
     logging.info("Logger shutting down!")
     logging.shutdown()

@@ -161,7 +161,19 @@ class HistogramProcessor(object):
                             bin_ratio = round(bin_yield/readfile.Get(category+'.'+process).Integral(1,hist.GetNbinsX()),4)
                             bin_ratio = max(bin_ratio,0.0001)
 
-                    #Create sys_dict key if it doesn't exit; can't edit a dict object that doesn't exist yet
+                        #Special case for anatest13 PSISR systematic. Will be fixed in future versions of hist file
+                        if systematic in ['PSISRUP']:
+                            if bin == 1: bin_ratio=1.05
+                            if bin == 2: bin_ratio=1.025
+                            if bin == 3: bin_ratio=0.975
+                            if bin == 4: bin_ratio=0.95
+                        if systematic in ['PSISRDOWN']:
+                            if bin == 1: bin_ratio=0.95
+                            if bin == 2: bin_ratio=0.975
+                            if bin == 3: bin_ratio=1.025
+                            if bin == 4: bin_ratio=1.5
+
+                    #Create sys_dict key if it doesn't exist; can't edit a dict object that doesn't exist yet
                     if not sys_dict.has_key((process,category_njet)):
                         sys_dict[(process,category_njet)] = {}
                     sys_dict[(process,category_njet)][systematic] = bin_ratio
