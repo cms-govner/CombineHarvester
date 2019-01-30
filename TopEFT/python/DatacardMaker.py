@@ -106,7 +106,7 @@ class DatacardMaker(object):
                 #MCStats uncertainty (fully correlated, taken from nominal bin errors)
                 #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
                 #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
-                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Lumi','lnN',ch.SystMap()( 1.025 ))
+                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Lumi','lnN',ch.SystMap()( 1.023 ))
                 #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
                 if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
                 #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
@@ -182,7 +182,7 @@ class DatacardMaker(object):
         return self.hp.getDatasets()
 
 if __name__ == "__main__":
-    log_file = 'out.log'
+    log_file = 'DatacardMaker.log'
 
     FORMAT1 = '%(message)s'
     FORMAT2 = '[%(levelname)s] %(message)s'

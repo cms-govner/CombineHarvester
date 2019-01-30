@@ -205,9 +205,9 @@ class HistogramProcessor(object):
                 self.logger.info("Skipping %s for low signal yield.",cat)
             if cat in debug_categories: self.logger.debug("%s %s %s",str(bkgd),str(sgnl),str(bkgd+sgnl))
 
-        self.logger.info("Categories: %s",str(categories_nonzero))
-        self.logger.info("Signals: %s",str(sgnl_names))
-        self.logger.info("Backgrounds: %s",str(bkgd_names))
+        self.logger.info( "{} Categories: {}".format(len(categories_nonzero),categories_nonzero) )
+        self.logger.info( "{} Signals: {}".format(len(sgnl_names),sgnl_names) )
+        self.logger.info( "{} Backgrounds: {}".format(len(bkgd_names),bkgd_names) )
         #print data_dict
         #print nom_dict
 
