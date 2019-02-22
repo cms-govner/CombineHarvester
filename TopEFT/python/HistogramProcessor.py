@@ -8,7 +8,7 @@ class HistogramProcessor(object):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
-        self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','singlet_tWchan','singletbar_tWchan','ttGJets']
+        self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','ttGJets']
         self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
 
         # Initialize reweight point for fake data
@@ -19,7 +19,7 @@ class HistogramProcessor(object):
             'cpt','cQl3i','cQlMi','cQei','ctli','ctei','ctlSi','ctlTi'
         ]
         for op in self.operators_fakedata:
-            WCPoint_string += '_{op}_1'.format(op=op)
+            WCPoint_string += '_{op}_2'.format(op=op)
             #if op == 'ctZ': WCPoint_string += '_{op}_1'.format(op=op)
             #if op == 'ctW': WCPoint_string += '_{op}_0'.format(op=op)
         self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)

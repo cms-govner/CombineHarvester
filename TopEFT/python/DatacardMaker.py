@@ -63,9 +63,15 @@ class DatacardMaker(object):
         self.logger.info("Adding observation rates...")
         self.cb.ForEachObs(lambda x: x.set_rate(obs_rates[x.bin()])) #Not split by process/channel, obviously
 
+        #Function for making sure bin yield > 0
+        def checkRate(x):
+            if nom_dict[x.process(),x.bin()]>0:
+                x.set_rate(nom_dict[x.process(),x.bin()])
+
         #Fill the nominal MC rates
         self.logger.info("Adding MC rates...")
-        self.cb.ForEachProc(lambda x: x.set_rate(nom_dict[x.process(),x.bin()]))
+        #self.cb.ForEachProc(lambda x: x.set_rate(nom_dict[x.process(),x.bin()]))
+        self.cb.ForEachProc(lambda x: checkRate(x))
 
         #Fill systematic rates
         for proc in sgnl_names+bkgd_names:
@@ -105,28 +111,34 @@ class DatacardMaker(object):
             for cat in categories:
                 #MCStats uncertainty (fully correlated, taken from nominal bin errors)
                 #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
+                if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'FR_stats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
                 #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
-                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Lumi','lnN',ch.SystMap()( 1.023 ))
+                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'lumi_13TeV_2017','lnN',ch.SystMap()( 1.023 ))
                 #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
                 if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
                 #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_ggttH','lnN',ch.SystMap()( PDFrate ))
-                if proc in ['ttll','ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_gg','lnN',ch.SystMap()( PDFrate ))
-                if proc in ['ttlnu','tllq','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_qq','lnN',ch.SystMap()( PDFrate ))
-                if proc in ['singlet_tWchan','singletbar_tWchan']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_qg','lnN',ch.SystMap()( PDFrate ))
+                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_ggttH','lnN',ch.SystMap()( 1/PDFrate ))
+                if proc in ['ttll','ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
+                if proc in ['ttlnu','tllq','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
                 #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_ttH','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_tt','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['singlet_tWchan','singletbar_tWchan']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_t','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_V','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_VV','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_VVV','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2_ttG','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_V','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
+                if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
                 #Standard uncertainties with usual UP/DOWN variations
-                #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID
+                #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
                 for sys in sys_types:
+                    # Use CMS-standard names for uncertainties
+                    sys_name = sys
+                    if sys == 'JES': sys_name = 'CMS_scale_j'
+                    if sys == 'TRG': sys_name = 'CMS_eff_em'
+                    if sys in ['HF','HFSTATS1','HFSTATS2','LF','LFSTATS1','LFSTATS2']:
+                        sys_name = sys.lower()
+
                     if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
-                    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'UP'], sys_dict[(proc,cat)][sys+'DOWN']]))
+                    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
         #Printout of signal and background yields (debug)
         if self.debug:
