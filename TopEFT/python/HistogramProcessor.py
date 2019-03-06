@@ -12,16 +12,19 @@ class HistogramProcessor(object):
         self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
 
         # Initialize reweight point for fake data
-        # Default to all operators = 1
         WCPoint_string = 'fakedata'
         self.operators_fakedata = [
             'ctW','ctp','cpQM','ctZ','ctG','cbW','cpQ3','cptb',
             'cpt','cQl3i','cQlMi','cQei','ctli','ctei','ctlSi','ctlTi'
         ]
         for op in self.operators_fakedata:
-            WCPoint_string += '_{op}_2'.format(op=op)
-            #if op == 'ctZ': WCPoint_string += '_{op}_1'.format(op=op)
-            #if op == 'ctW': WCPoint_string += '_{op}_0'.format(op=op)
+            # All set to 1
+            WCPoint_string += '_{op}_1'.format(op=op)
+
+            # 2-sigma values for a few operators
+            #if op == 'ctW': WCPoint_string += '_{op}_3.56'.format(op=op)
+            #if op == 'cbW': WCPoint_string += '_{op}_1.18'.format(op=op)
+            #if op == 'cQlMi': WCPoint_string += '_{op}_6.15'.format(op=op)
         self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
         self.sm_pt = ROOT.WCPoint()
 
@@ -105,11 +108,11 @@ class HistogramProcessor(object):
                     # MC Nominal
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
-                    bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
+                    bin_yield = round(hist.GetBinContent(bin,self.sm_pt),8)
                     nom_dict.update({(process,category_njet):bin_yield})
                     # Fake data
                     if fake_data:
-                        fakedata_bin_yield = round(hist.GetBinContent(bin,self.rwgt_pt),4)
+                        fakedata_bin_yield = round(hist.GetBinContent(bin,self.rwgt_pt),8)
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
 
                 # Get MCStats uncertainty for the nominal histograms
@@ -124,9 +127,9 @@ class HistogramProcessor(object):
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
                         if process in self.sgnl_known: # Determined by TH1EFT fit
-                            bin_yield = round(hist.GetBinFit(bin).evalPointError(self.sm_pt),4)
+                            bin_yield = round(hist.GetBinFit(bin).evalPointError(self.sm_pt),8)
                         if process in self.bkgd_known: # Determined by sqrt(yield)
-                            bin_yield = round(math.sqrt(max(0,hist.GetBinContent(bin,self.sm_pt))),4)
+                            bin_yield = round(math.sqrt(max(0,hist.GetBinContent(bin,self.sm_pt))),8)
                         bin_ratio = 1+bin_yield/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
 
@@ -147,18 +150,19 @@ class HistogramProcessor(object):
                     if category_njet not in categories: categories.append(category_njet)
 
                     #Calculate ratio to nominal
-                    #If the nominal yield is zero, set the ratio to 1.0
+                    #If the nominal yield is zero, set the ratio to 1.0 ### NO, don't include at all!
                     #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
-                        bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
-                        bin_ratio = bin_yield/nom_dict[(process,category_njet)]
+                        bin_yield = round(hist.GetBinContent(bin,self.sm_pt),8)
+                        #bin_ratio = bin_yield/nom_dict[(process,category_njet)]
+                        bin_ratio = round(bin_yield/nom_dict[(process,category_njet)],8)
                         bin_ratio = max(bin_ratio,0.0001)
 
                         #Special case for fake rate uncertainty; average effect over all njets bins
                         if systematic in ['FRUP','FRDOWN']:
                             bin_yield = hist.Integral(1,hist.GetNbinsX())
-                            bin_ratio = round(bin_yield/readfile.Get(category+'.'+process).Integral(1,hist.GetNbinsX()),4)
+                            bin_ratio = round(bin_yield/readfile.Get(category+'.'+process).Integral(1,hist.GetNbinsX()),8)
                             bin_ratio = max(bin_ratio,0.0001)
 
                         #Special case for anatest13 PSISR systematic. Will be fixed in future versions of hist file

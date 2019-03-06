@@ -73,6 +73,11 @@ class DatacardMaker(object):
         #self.cb.ForEachProc(lambda x: x.set_rate(nom_dict[x.process(),x.bin()]))
         self.cb.ForEachProc(lambda x: checkRate(x))
 
+        #Round systematics (Only for debug purposes when viewing datacard! Keep full accuracy otherwise!)
+        for outerkey,outervalue in sys_dict.items():
+            for innerkey,innervalue in outervalue.items():
+                sys_dict[outerkey][innerkey]=round(innervalue,4)
+
         #Fill systematic rates
         for proc in sgnl_names+bkgd_names:
             self.logger.info("Adding systematics for %s...",proc)
@@ -101,7 +106,7 @@ class DatacardMaker(object):
             if proc in ['WWW','WWZ','WZZ','ZZZ']: # Unknown; conservative here
                 PDFrate = 1.05
                 Q2rate  = [0.95,1.05]
-            if proc in ['charge_flips','fakes']: # Data-drive, so none
+            if proc in ['charge_flips','fakes']: # Data-driven, so none
                 PDFrate = 1.0
                 Q2rate  = [1.0,1.0]
             if proc in ['ttGJets']: # Unknown; conservative here
@@ -109,36 +114,37 @@ class DatacardMaker(object):
                 Q2rate = [0.90,1.10]
 
             for cat in categories:
-                #MCStats uncertainty (fully correlated, taken from nominal bin errors)
-                #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
-                if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'FR_stats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
-                #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
-                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'lumi_13TeV_2017','lnN',ch.SystMap()( 1.023 ))
-                #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
-                if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
-                #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_ggttH','lnN',ch.SystMap()( 1/PDFrate ))
-                if proc in ['ttll','ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
-                if proc in ['ttlnu','tllq','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
-                #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_V','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
-                if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
-                #Standard uncertainties with usual UP/DOWN variations
-                #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
-                for sys in sys_types:
-                    # Use CMS-standard names for uncertainties
-                    sys_name = sys
-                    if sys == 'JES': sys_name = 'CMS_scale_j'
-                    if sys == 'TRG': sys_name = 'CMS_eff_em'
-                    if sys in ['HF','HFSTATS1','HFSTATS2','LF','LFSTATS1','LFSTATS2']:
-                        sys_name = sys.lower()
+                if nom_dict[proc,cat]:
+                    #MCStats uncertainty (fully correlated, taken from nominal bin errors)
+                    #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
+                    if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'FR_stats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
+                    #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
+                    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'lumi_13TeV_2017','lnN',ch.SystMap()( 1.023 ))
+                    #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
+                    if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
+                    #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
+                    if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_ggttH','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['ttll','ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['ttlnu','tllq','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
+                    #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
+                    if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_V','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
+                    #Standard uncertainties with usual UP/DOWN variations
+                    #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
+                    for sys in sys_types:
+                        # Use CMS-standard names for uncertainties
+                        sys_name = sys
+                        if sys == 'JES': sys_name = 'CMS_scale_j'
+                        if sys == 'TRG': sys_name = 'CMS_eff_em'
+                        if sys in ['HF','HFSTATS1','HFSTATS2','LF','LFSTATS1','LFSTATS2']:
+                            sys_name = sys.lower()
 
-                    if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
-                    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                        if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
+                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
         #Printout of signal and background yields (debug)
         if self.debug:
