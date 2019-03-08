@@ -6,9 +6,10 @@ ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so
 class HistogramProcessor(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.sgnl_known = ['ttH','tllq','ttll','ttlnu']
+        self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
-        self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','ttGJets']
+        #self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','ttGJets']
+        self.bkgd_known = ['charge_flips','fakes','WZ','WWW','ttGJets']
         self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
 
         # Initialize reweight point for fake data
@@ -188,7 +189,26 @@ class HistogramProcessor(object):
                 elif systematic.endswith('DOWN'): sys_type = systematic[:-4]
                 if sys_type not in sys_types: sys_types.append(sys_type)
 
-        # Only analyze categories with at least a few background events to prevent negative yields
+        # This is a hack... hopefully the names get fixed in the hist file in the future.
+        # Replace WZ and WWW with Diboson and Triboson (since this is what they really are)
+        bkgd_names = [bkgd.replace('WZ','Diboson') for bkgd in bkgd_names]
+        bkgd_names = [bkgd.replace('WWW','Triboson') for bkgd in bkgd_names]
+        for key in nom_dict:
+            if key[0] == 'WZ':
+                nom_dict['Diboson',key[1]] = nom_dict[key]
+                del nom_dict[key]
+            if key[0] == 'WWW':
+                nom_dict['Triboson',key[1]] = nom_dict[key]
+                del nom_dict[key]
+        for key in sys_dict:
+            if key[0] == 'WZ':
+                sys_dict['Diboson',key[1]] = sys_dict[key]
+                del sys_dict[key]
+            if key[0] == 'WWW':
+                sys_dict['Triboson',key[1]] = sys_dict[key]
+                del sys_dict[key]
+
+        # Only analyze categories with at least a small fraction of events to prevent negative yields
         self.logger.info("Getting final categories...")
         categories_nonzero = []
         for cat in categories:

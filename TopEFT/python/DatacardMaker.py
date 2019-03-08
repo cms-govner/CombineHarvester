@@ -74,9 +74,9 @@ class DatacardMaker(object):
         self.cb.ForEachProc(lambda x: checkRate(x))
 
         #Round systematics (Only for debug purposes when viewing datacard! Keep full accuracy otherwise!)
-        for outerkey,outervalue in sys_dict.items():
-            for innerkey,innervalue in outervalue.items():
-                sys_dict[outerkey][innerkey]=round(innervalue,4)
+        #for outerkey,outervalue in sys_dict.items():
+        #    for innerkey,innervalue in outervalue.items():
+        #        sys_dict[outerkey][innerkey]=round(innervalue,4)
 
         #Fill systematic rates
         for proc in sgnl_names+bkgd_names:
@@ -97,16 +97,19 @@ class DatacardMaker(object):
             if proc=='tllq': # V+jets?? Uncertain!
                 PDFrate = 1.04
                 Q2rate  = [0.99,1.01]
+            if proc=='tHq': # V+jets?? Uncertain!
+                PDFrate = 1.037
+                Q2rate  = [0.92,1.06]
             if proc in ['singlet_tWchan','singletbar_tWchan']: # Done
                 PDFrate = 1.03
                 Q2rate  = [0.98,1.03]
-            if proc in ['WZ','ZZ','WW']: # Done
+            if proc in ['Diboson']: # Done
                 PDFrate = 1.02
                 Q2rate  = [0.98,1.02]
-            if proc in ['WWW','WWZ','WZZ','ZZZ']: # Unknown; conservative here
-                PDFrate = 1.05
-                Q2rate  = [0.95,1.05]
-            if proc in ['charge_flips','fakes']: # Data-driven, so none
+            if proc in ['Triboson']: # See ATLAS paper https://arxiv.org/pdf/1610.05088.pdf
+                PDFrate = 1.042
+                Q2rate  = [0.974,1.026]
+            if proc in ['charge_flips','fakes']: # Data-driven, so none (These won't go in the datacard)
                 PDFrate = 1.0
                 Q2rate  = [1.0,1.0]
             if proc in ['ttGJets']: # Unknown; conservative here
@@ -125,13 +128,14 @@ class DatacardMaker(object):
                     #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
                     if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_ggttH','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['ttll','ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
-                    if proc in ['ttlnu','tllq','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['ttlnu','tllq','Diboson','Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['tHq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qgtHq','lnN',ch.SystMap()( 1/PDFrate ))
                     #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
                     if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_V','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['WZ','ZZ','WW']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['WWW','WWZ','WZZ','ZZZ']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
                     #Standard uncertainties with usual UP/DOWN variations
                     #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
@@ -239,7 +243,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest13.root',fake_data)
+    dm.make('../hist_files/anatest14.root',fake_data)
 
     logging.info("Logger shutting down!")
     logging.shutdown()
