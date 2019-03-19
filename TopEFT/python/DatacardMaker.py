@@ -117,6 +117,45 @@ class DatacardMaker(object):
                 Q2rate = [0.90,1.10]
 
             for cat in categories:
+                if '2lss' in cat:
+                    if '4j' in cat:
+                        PSISRDOWN = 0.95
+                        PSISRUP = 1.05
+                    if '5j' in cat:
+                        PSISRDOWN = 0.975
+                        PSISRUP = 1.025
+                    if '6j' in cat:
+                        PSISRDOWN = 1.025
+                        PSISRUP = 0.975
+                    if '7j' in cat:
+                        PSISRDOWN = 1.05
+                        PSISRUP = 0.95
+                if '3l' in cat:
+                    if '2j' in cat:
+                        PSISRDOWN = 0.95
+                        PSISRUP = 1.05
+                    if '3j' in cat:
+                        PSISRDOWN = 0.975
+                        PSISRUP = 1.025
+                    if '4j' in cat:
+                        PSISRDOWN = 1.025
+                        PSISRUP = 0.975
+                    if '5j' in cat:
+                        PSISRDOWN = 1.05
+                        PSISRUP = 0.95
+                if '4l' in cat:
+                    if '1j' in cat:
+                        PSISRDOWN = 0.95
+                        PSISRUP = 1.05
+                    if '2j' in cat:
+                        PSISRDOWN = 0.975
+                        PSISRUP = 1.025
+                    if '3j' in cat:
+                        PSISRDOWN = 1.025
+                        PSISRUP = 0.975
+                    if '4j' in cat:
+                        PSISRDOWN = 1.05
+                        PSISRUP = 0.95
                 if nom_dict[proc,cat]:
                     #MCStats uncertainty (fully correlated, taken from nominal bin errors)
                     #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
@@ -137,6 +176,8 @@ class DatacardMaker(object):
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
+                    #PSISR for anatest14 ONLY
+                    if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
                     #Standard uncertainties with usual UP/DOWN variations
                     #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
                     for sys in sys_types:
