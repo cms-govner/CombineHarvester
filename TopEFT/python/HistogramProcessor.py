@@ -10,7 +10,8 @@ class HistogramProcessor(object):
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
         #self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','ttGJets']
         self.bkgd_known = ['charge_flips','fakes','WZ','WWW','ttGJets']
-        self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
+        #self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
+        self.data_known = ['data']
 
         # Initialize reweight point for fake data
         WCPoint_string = 'fakedata'

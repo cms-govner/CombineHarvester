@@ -37,19 +37,20 @@ class DatacardMaker(object):
                     cat_asimov += fakedata_dict[proc,cat]
                 obs_rates[cat]=cat_asimov
         #Asimov data
-        else:
-            for cat in categories:
-                cat_asimov = 0
-                for proc in sgnl_names+bkgd_names:
-                    cat_asimov += nom_dict[proc,cat]
-                obs_rates[cat]=cat_asimov
+        #else:
+        #    for cat in categories:
+        #        cat_asimov = 0
+        #        for proc in sgnl_names+bkgd_names:
+        #            cat_asimov += nom_dict[proc,cat]
+        #        obs_rates[cat]=cat_asimov
 
         #Actual data (hists not currently filled, but placeholders are present)
-        #obs_rates={}
-        #for cat in categories:
-        #    obs_rates[cat]=0
-        #for (proc, cat) in data_dict.keys():
-        #   if cat in categories: obs_rates[cat] += data_dict[proc,cat]
+        else:
+            obs_rates={}
+            for cat in categories:
+                obs_rates[cat]=0
+            for (proc, cat) in data_dict.keys():
+               if cat in categories: obs_rates[cat] += data_dict[proc,cat]
 
         #Initialize structure of each observation (data) and process (MC signal and background)
         #Can be adjusted very heavily to specialize each era/process/category
@@ -159,23 +160,25 @@ class DatacardMaker(object):
                 if nom_dict[proc,cat]:
                     #MCStats uncertainty (fully correlated, taken from nominal bin errors)
                     #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
-                    if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'FR_stats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
+                    if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'FR_stats'+cat.strip('C'),'lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
                     #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
                     self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'lumi_13TeV_2017','lnN',ch.SystMap()( 1.023 ))
                     #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
                     if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
                     #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                    if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_ggttH','lnN',ch.SystMap()( 1/PDFrate ))
-                    if proc in ['ttll']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
-                    if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
-                    if proc in ['ttlnu','tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['ttH']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_ggttH','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['ttll']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['tllq']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
+                    #if proc in ['tHq']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qgtHq','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['Diboson','Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
-                    if proc in ['tHq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qgtHq','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
                     #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
-                    if proc in ['ttH']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['ttll','ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['tllq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_V','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['tHq']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_tHq','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['ttH']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['ttll']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['tllq']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_V','lnN',ch.SystMap()( Q2rate ))
+                    #if proc in ['tHq']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_tHq','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
@@ -287,7 +290,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest14.root',fake_data)
+    dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")
     logging.shutdown()
