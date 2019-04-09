@@ -7,10 +7,11 @@ class HistogramProcessor(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
+        #self.sgnl_known = ['ttll']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
-        #self.bkgd_known = ['charge_flips','fakes','WZ','ZZ','WW','WWW','WWZ','WZZ','ZZZ','ttGJets']
+        #self.sgnl_histnames = [sgnl for sgnl in self.sgnl_known]
         self.bkgd_known = ['charge_flips','fakes','WZ','WWW','ttGJets']
-        #self.data_known = ['data_doubleEle','data_muonEle','data_doubleMu','data_singleEle','data_singleMu']
+        #self.bkgd_known = []
         self.data_known = ['data']
 
         # Initialize reweight point for fake data
@@ -74,6 +75,9 @@ class HistogramProcessor(object):
             category,systematic,process = '','',''
             if(len(histname)==3): [category,systematic,process] = histname
             if(len(histname)==2): [category,process] = histname
+            process = process.replace('tZq','tllq')
+            process = process.replace('ttZ','ttll')
+            process = process.replace('ttW','ttlnu')
 
             if process in debug_processes:
                 for bin in range(1,5): # Doesn't include bin 5
@@ -81,13 +85,13 @@ class HistogramProcessor(object):
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
 
-            #Logic for data NOT VERIFIED
+            #Logic for data
             if process in self.data_known:
-                if process not in data_names: data_names.append(process.replace('data_',''))
+                if process not in data_names: data_names.append(process)
                 for bin in range(1,5): # Doesn't include bin 5
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
-                    bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
+                    bin_yield = hist.GetBinContent(bin,self.sm_pt)
                     data_dict.update({(process,category_njet):bin_yield})
 
             # Logic for MC yields below
@@ -97,9 +101,6 @@ class HistogramProcessor(object):
             if process in self.sgnl_histnames:
                 process = process.rsplit("_",1)[0]
                 if process not in sgnl_names: sgnl_names.append(process)
-                #process = process.replace('tllq','tZq')
-                #process = process.replace('ttll','ttZ')
-                #process = process.replace('ttlnu','ttW')
             if process in self.bkgd_known:
                 if process not in bkgd_names: bkgd_names.append(process)
 
@@ -167,18 +168,6 @@ class HistogramProcessor(object):
                             bin_ratio = round(bin_yield/readfile.Get(category+'.'+process).Integral(1,hist.GetNbinsX()),8)
                             bin_ratio = max(bin_ratio,0.0001)
 
-                        #Special case for anatest13 PSISR systematic. Will be fixed in future versions of hist file
-                        if systematic in ['PSISRUP']:
-                            if bin == 1: bin_ratio=1.05
-                            if bin == 2: bin_ratio=1.025
-                            if bin == 3: bin_ratio=0.975
-                            if bin == 4: bin_ratio=0.95
-                        if systematic in ['PSISRDOWN']:
-                            if bin == 1: bin_ratio=0.95
-                            if bin == 2: bin_ratio=0.975
-                            if bin == 3: bin_ratio=1.025
-                            if bin == 4: bin_ratio=1.5
-
                     #Create sys_dict key if it doesn't exist; can't edit a dict object that doesn't exist yet
                     if not sys_dict.has_key((process,category_njet)):
                         sys_dict[(process,category_njet)] = {}
@@ -222,10 +211,11 @@ class HistogramProcessor(object):
                 sgnl += nom_dict[proc,cat]
                 if cat in debug_categories: self.logger.debug("%s %s",proc,str(nom_dict[proc,cat]))
             if sgnl >= 0.01:
-                if bkgd >= 0.01:
-                    categories_nonzero.append(cat)
-                else:
-                    self.logger.info("Skipping %s for low background yield.",cat)
+                categories_nonzero.append(cat)
+                #if bkgd >= 0.01:
+                #    categories_nonzero.append(cat)
+                #else:
+                #    self.logger.info("Skipping %s for low background yield.",cat)
             else:
                 self.logger.info("Skipping %s for low signal yield.",cat)
             if cat in debug_categories: self.logger.debug("%s %s %s",str(bkgd),str(sgnl),str(bkgd+sgnl))

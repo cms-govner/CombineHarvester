@@ -182,7 +182,7 @@ class DatacardMaker(object):
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
-                    #PSISR for anatest14 ONLY
+                    #PSISR for anatest14&15 ONLY
                     if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
                     #Standard uncertainties with usual UP/DOWN variations
                     #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
@@ -195,48 +195,11 @@ class DatacardMaker(object):
                             sys_name = sys.lower()
 
                         if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
-                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
-                    #Systematics for testing unblinded data
-                    if 'tHq' in proc:
-                        if '2lss' in cat:
-                            if '4j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_2lss_4j','lnN',ch.SystMap()( 1.10 ))
-                            if '5j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_2lss_5j','lnN',ch.SystMap()( 1.20 ))
-                            if '6j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_2lss_6j','lnN',ch.SystMap()( 1.30 ))
-                            if '7j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_2lss_7j','lnN',ch.SystMap()( 1.40 ))
-                        if '3l' in cat:
-                            if '2j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_3l_2j','lnN',ch.SystMap()( 1.10 ))
-                            if '3j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_3l_3j','lnN',ch.SystMap()( 1.20 ))
-                            if '4j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_3l_4j','lnN',ch.SystMap()( 1.30 ))
-                            if '5j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tHq_3l_5j','lnN',ch.SystMap()( 1.40 ))
-                    if 'tllq' in proc:
-                        if '3l' in cat:
-                            if '2j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tllq_3l_2j','lnN',ch.SystMap()( 1.10 ))
-                            if '3j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tllq_3l_3j','lnN',ch.SystMap()( 1.20 ))
-                            if '4j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tllq_3l_4j','lnN',ch.SystMap()( 1.30 ))
-                            if '5j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_tllq_3l_5j','lnN',ch.SystMap()( 1.40 ))
-                    if 'ttH' in proc:
-                        if '2lss' in cat:
-                            if '7j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttH_2lss_7j','lnN',ch.SystMap()( 1.10 ))
-                        if '3l' in cat:
-                            if '5j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttH_3l_5j','lnN',ch.SystMap()( 1.10 ))
-                        if '4l' in cat:
-                            if '3j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttH_4l_3j','lnN',ch.SystMap()( 1.10 ))
-                            if '4j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttH_4l_4j','lnN',ch.SystMap()( 1.20 ))
-                    if 'ttll' in proc:
-                        if '3l' in cat:
-                            if '4j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttll_3l_4j','lnN',ch.SystMap()( 1.10 ))
-                        if '4l' in cat:
-                            if '3j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttll_4l_3j','lnN',ch.SystMap()( 1.10 ))
-                            if '4j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttll_4l_4j','lnN',ch.SystMap()( 1.20 ))
-                    if 'ttlnu' in proc:
-                        if '2lss' in cat:
-                            if '5j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttlnu_2lss_5j','lnN',ch.SystMap()( 1.10 ))
-                            if '6j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttlnu_2lss_6j','lnN',ch.SystMap()( 1.20 ))
-                            if '7j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttlnu_2lss_7j','lnN',ch.SystMap()( 1.30 ))
-                        if '3l' in cat:
-                            if '3j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttlnu_3l_3j','lnN',ch.SystMap()( 1.10 ))
-                            if '4j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttlnu_3l_4j','lnN',ch.SystMap()( 1.20 ))
-                            if '5j' in cat: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Shower_ttlnu_3l_5j','lnN',ch.SystMap()( 1.30 ))
+                        if sys == 'ADHOCNJ':
+                            if not proc == 'ttll':
+                                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'{0}_{1}'.format(sys_name,proc),'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                        else:
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
         #Printout of signal and background yields (debug)
         if self.debug:
@@ -331,6 +294,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
+    #dm.make('../hist_files/anatest17.root',fake_data)
     dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")
