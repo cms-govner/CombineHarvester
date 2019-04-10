@@ -7,11 +7,9 @@ class HistogramProcessor(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
-        #self.sgnl_known = ['ttll']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
         #self.sgnl_histnames = [sgnl for sgnl in self.sgnl_known]
         self.bkgd_known = ['charge_flips','fakes','WZ','WWW','ttGJets']
-        #self.bkgd_known = []
         self.data_known = ['data']
 
         # Initialize reweight point for fake data
@@ -28,7 +26,8 @@ class HistogramProcessor(object):
             #if op == 'ctW': WCPoint_string += '_{op}_3.56'.format(op=op)
             #if op == 'cbW': WCPoint_string += '_{op}_1.18'.format(op=op)
             #if op == 'cQlMi': WCPoint_string += '_{op}_6.15'.format(op=op)
-        self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
+        #self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
+        self.rwgt_pt = ROOT.WCPoint()
         self.sm_pt = ROOT.WCPoint()
 
     def name_bin(self,category,bin):
@@ -62,7 +61,7 @@ class HistogramProcessor(object):
         if fake_data:
             self.logger.info("Using operators %s for fake data.",self.operators_fakedata)
         else:
-            self.logger.info("Not using fake data. #CURRENTLY SM PREDICTION, not real data#")
+            self.logger.info("Using real data.")
 
         self.logger.info("Looping through histograms...")
 

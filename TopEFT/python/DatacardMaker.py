@@ -157,9 +157,11 @@ class DatacardMaker(object):
                     if '4j' in cat:
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
+
                 if nom_dict[proc,cat]:
                     #MCStats uncertainty (fully correlated, taken from nominal bin errors)
                     #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
+                    #FR_stats uncertainty (fully uncorrelated, taken from MC stats error)
                     if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'FR_stats'+cat.strip('C'),'lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
                     #Lumi uncertainty (fully correlated, flat rate, identical for all categories)
                     self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'lumi_13TeV_2017','lnN',ch.SystMap()( 1.023 ))
@@ -196,7 +198,7 @@ class DatacardMaker(object):
 
                         if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
                         if sys == 'ADHOCNJ':
-                            if not proc == 'ttll':
+                            if not any([proc == 'ttll', proc == 'tllq' and '4l' in cat]):
                                 self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'{0}_{1}'.format(sys_name,proc),'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
                         else:
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
@@ -294,8 +296,8 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    #dm.make('../hist_files/anatest17.root',fake_data)
-    dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
+    dm.make('../hist_files/anatest18.root',fake_data)
+    #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")
     logging.shutdown()
