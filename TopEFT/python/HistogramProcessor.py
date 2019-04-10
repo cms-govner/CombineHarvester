@@ -106,6 +106,8 @@ class HistogramProcessor(object):
             # Logic for the nominal histograms
             if systematic == '':
                 self.logger.debug("Nominal Hist: %s",hist.GetName())
+
+                # Get nominal yields and yields for fake data
                 for bin in range(1,5): # Doesn't include bin 5
                     # MC Nominal
                     category_njet = self.name_bin(category,bin)
@@ -189,6 +191,13 @@ class HistogramProcessor(object):
             if key[0] == 'WWW':
                 nom_dict['Triboson',key[1]] = nom_dict[key]
                 del nom_dict[key]
+        for key in fakedata_dict:
+            if key[0] == 'WZ':
+                fakedata_dict['Diboson',key[1]] = fakedata_dict[key]
+                del fakedata_dict[key]
+            if key[0] == 'WWW':
+                fakedata_dict['Triboson',key[1]] = fakedata_dict[key]
+                del fakedata_dict[key]
         for key in sys_dict:
             if key[0] == 'WZ':
                 sys_dict['Diboson',key[1]] = sys_dict[key]

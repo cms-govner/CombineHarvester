@@ -32,10 +32,10 @@ class DatacardMaker(object):
         if fake_data:
             self.logger.info("Using fake data")
             for cat in categories:
-                cat_asimov = 0
+                cat_fakeyield = 0
                 for proc in sgnl_names+bkgd_names:
-                    cat_asimov += fakedata_dict[proc,cat]
-                obs_rates[cat]=cat_asimov
+                    cat_fakeyield += fakedata_dict[proc,cat]
+                obs_rates[cat]=cat_fakeyield
         #Asimov data
         #else:
         #    for cat in categories:
