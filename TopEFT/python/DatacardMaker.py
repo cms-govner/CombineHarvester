@@ -198,6 +198,7 @@ class DatacardMaker(object):
 
                         if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
                         if sys == 'ADHOCNJ':
+                            sys_name = 'nj'
                             if not any([proc == 'ttll', proc == 'tllq' and '4l' in cat]):
                                 self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'{0}_{1}'.format(sys_name,proc),'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
                         else:
