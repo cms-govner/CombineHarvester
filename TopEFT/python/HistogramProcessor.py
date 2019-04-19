@@ -31,12 +31,20 @@ class HistogramProcessor(object):
         self.sm_pt = ROOT.WCPoint()
 
     def name_bin(self,category,bin):
+        # For standard histogram files
+        #if "2lss" in category:
+        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+3)
+        #if "3l" in category:
+        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+1)
+        #if "4l" in category:
+        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin)
+        # For anatest19
         if "2lss" in category:
-            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+3)
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==2 else '', bin+3)
         if "3l" in category:
-            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+1)
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==2 else '', bin+1)
         if "4l" in category:
-            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin)
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==3 else '', bin)
 
     def process(self,infile,fake_data):
         self.logger.info("Setting up...")
@@ -78,8 +86,13 @@ class HistogramProcessor(object):
             process = process.replace('ttZ','ttll')
             process = process.replace('ttW','ttlnu')
 
+            maxbin = 5
+            if '2lss' in category: maxbin=2
+            if '3l' in category: maxbin=2
+            if '4l' in category: maxbin=4
+
             if process in debug_processes:
-                for bin in range(1,5): # Doesn't include bin 5
+                for bin in range(1,maxbin+1): # Doesn't include bin 5
                     category_njet = self.name_bin(category,bin)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
@@ -87,7 +100,7 @@ class HistogramProcessor(object):
             #Logic for data
             if process in self.data_known:
                 if process not in data_names: data_names.append(process)
-                for bin in range(1,5): # Doesn't include bin 5
+                for bin in range(1,maxbin+1): # Doesn't include bin 5
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
                     bin_yield = hist.GetBinContent(bin,self.sm_pt)
@@ -108,7 +121,7 @@ class HistogramProcessor(object):
                 self.logger.debug("Nominal Hist: %s",hist.GetName())
 
                 # Get nominal yields and yields for fake data
-                for bin in range(1,5): # Doesn't include bin 5
+                for bin in range(1,maxbin+1): # Doesn't include bin 5
                     # MC Nominal
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
@@ -120,7 +133,7 @@ class HistogramProcessor(object):
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
 
                 # Get MCStats uncertainty for the nominal histograms
-                for bin in range(1,5): # Doesn't include bin 5
+                for bin in range(1,maxbin+1): # Doesn't include bin 5
                     #Check category exists. This is probably redundant as if it doesn't, it should give an error when calculating the ratio
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
@@ -147,7 +160,7 @@ class HistogramProcessor(object):
                 self.logger.debug("Systematic Hist: %s",hist.GetName())
                 if systematic not in sys_types: sys_types.append(systematic)
 
-                for bin in range(1,5): # Doesn't include bin 5
+                for bin in range(1,maxbin+1): # Doesn't include bin 5
                     # Check category exists. This is probably redundant as if it doesn't, it should 
                     #   give an error when calculating the ratio
                     category_njet = self.name_bin(category,bin)

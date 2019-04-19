@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest18.root',fake_data)
+    dm.make('../hist_files/anatest19.root',fake_data)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")
