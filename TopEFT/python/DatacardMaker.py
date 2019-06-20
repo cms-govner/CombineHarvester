@@ -113,7 +113,7 @@ class DatacardMaker(object):
             if proc in ['charge_flips','fakes']: # Data-driven, so none (These won't go in the datacard)
                 PDFrate = 1.0
                 Q2rate  = [1.0,1.0]
-            if proc in ['ttGJets']: # Unknown; conservative here
+            if proc in ['convs']: # Unknown; conservative here
                 PDFrate = 1.5
                 Q2rate = [0.90,1.10]
 
@@ -174,7 +174,7 @@ class DatacardMaker(object):
                     if proc in ['tllq']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['tHq']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qgtHq','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['Diboson','Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
-                    if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
+                    if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
                     #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
                     if proc in ['ttH']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttll']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
@@ -183,11 +183,11 @@ class DatacardMaker(object):
                     if proc in ['tHq']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_tHq','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['ttGJets']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
                     #PSISR for anatest14&15 ONLY
                     if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
                     #Standard uncertainties with usual UP/DOWN variations
-                    #Includes FR, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
+                    #Includes FR_shape, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
                     for sys in sys_types:
                         # Use CMS-standard names for uncertainties
                         sys_name = sys
@@ -204,6 +204,11 @@ class DatacardMaker(object):
                         else:
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
+        self.cb.SetGroup('TheoryNuisances',['^pdf.*','^QCDscale.*'])
+        self.cb.SetGroup('bTagNuisances',['^hf.*','^lf.*','^CERR.*'])
+        self.cb.SetGroup('DDBkgdNuisances',['FR_shape','ChargeFlips','^FR_stats.*'])
+        self.cb.SetGroup('SystematicNuisances',['^.*'])
+        
         #Printout of signal and background yields (debug)
         if self.debug:
             background = {}
@@ -297,7 +302,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest19.root',fake_data)
+    dm.make('../hist_files/anatest20.root',fake_data)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")

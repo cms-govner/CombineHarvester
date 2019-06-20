@@ -9,7 +9,7 @@ class HistogramProcessor(object):
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
         #self.sgnl_histnames = [sgnl for sgnl in self.sgnl_known]
-        self.bkgd_known = ['charge_flips','fakes','WZ','WWW','ttGJets']
+        self.bkgd_known = ['charge_flips','fakes','Diboson','Triboson','convs']
         self.data_known = ['data']
 
         # Initialize reweight point for fake data
@@ -32,19 +32,19 @@ class HistogramProcessor(object):
 
     def name_bin(self,category,bin):
         # For standard histogram files
-        #if "2lss" in category:
-        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+3)
-        #if "3l" in category:
-        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+1)
-        #if "4l" in category:
-        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin)
-        # For anatest19
         if "2lss" in category:
-            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==2 else '', bin+3)
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+3)
         if "3l" in category:
-            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==2 else '', bin+1)
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+1)
         if "4l" in category:
-            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==3 else '', bin)
+            return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin)
+        # For anatest19
+        #if "2lss" in category:
+        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==2 else '', bin+3)
+        #if "3l" in category:
+        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==2 else '', bin+1)
+        #if "4l" in category:
+        #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==3 else '', bin)
 
     def process(self,infile,fake_data):
         self.logger.info("Setting up...")
@@ -67,7 +67,7 @@ class HistogramProcessor(object):
         debug_categories = []   # Ex: 'C_2lss_m_emu_2b_5j'
 
         if fake_data:
-            self.logger.info("Using operators %s for fake data.",self.operators_fakedata)
+            self.logger.info("Using fake data. Operators are %s",self.operators_fakedata)
         else:
             self.logger.info("Using real data.")
 
@@ -85,11 +85,17 @@ class HistogramProcessor(object):
             process = process.replace('tZq','tllq')
             process = process.replace('ttZ','ttll')
             process = process.replace('ttW','ttlnu')
+            process = process.replace('ttGJets','convs')
+            process = process.replace('WZ','Diboson')
+            process = process.replace('WWW','Triboson')
+            systematic = systematic.replace('FR','FR_shape')
 
-            maxbin = 5
-            if '2lss' in category: maxbin=2
-            if '3l' in category: maxbin=2
-            if '4l' in category: maxbin=4
+            # For standard histogram files
+            maxbin = 4
+            # For anatest19
+            #if '2lss' in category: maxbin=2
+            #if '3l' in category: maxbin=2
+            #if '4l' in category: maxbin=4
 
             if process in debug_processes:
                 for bin in range(1,maxbin+1): # Doesn't include bin 5
@@ -195,29 +201,29 @@ class HistogramProcessor(object):
 
         # This is a hack... hopefully the names get fixed in the hist file in the future.
         # Replace WZ and WWW with Diboson and Triboson (since this is what they really are)
-        bkgd_names = [bkgd.replace('WZ','Diboson') for bkgd in bkgd_names]
-        bkgd_names = [bkgd.replace('WWW','Triboson') for bkgd in bkgd_names]
-        for key in nom_dict:
-            if key[0] == 'WZ':
-                nom_dict['Diboson',key[1]] = nom_dict[key]
-                del nom_dict[key]
-            if key[0] == 'WWW':
-                nom_dict['Triboson',key[1]] = nom_dict[key]
-                del nom_dict[key]
-        for key in fakedata_dict:
-            if key[0] == 'WZ':
-                fakedata_dict['Diboson',key[1]] = fakedata_dict[key]
-                del fakedata_dict[key]
-            if key[0] == 'WWW':
-                fakedata_dict['Triboson',key[1]] = fakedata_dict[key]
-                del fakedata_dict[key]
-        for key in sys_dict:
-            if key[0] == 'WZ':
-                sys_dict['Diboson',key[1]] = sys_dict[key]
-                del sys_dict[key]
-            if key[0] == 'WWW':
-                sys_dict['Triboson',key[1]] = sys_dict[key]
-                del sys_dict[key]
+        #bkgd_names = [bkgd.replace('WZ','Diboson') for bkgd in bkgd_names]
+        #bkgd_names = [bkgd.replace('WWW','Triboson') for bkgd in bkgd_names]
+        #for key in nom_dict:
+        #    if key[0] == 'WZ':
+        #        nom_dict['Diboson',key[1]] = nom_dict[key]
+        #        del nom_dict[key]
+        #    if key[0] == 'WWW':
+        #        nom_dict['Triboson',key[1]] = nom_dict[key]
+        #        del nom_dict[key]
+        #for key in fakedata_dict:
+        #    if key[0] == 'WZ':
+        #        fakedata_dict['Diboson',key[1]] = fakedata_dict[key]
+        #        del fakedata_dict[key]
+        #    if key[0] == 'WWW':
+        #        fakedata_dict['Triboson',key[1]] = fakedata_dict[key]
+        #        del fakedata_dict[key]
+        #for key in sys_dict:
+        #    if key[0] == 'WZ':
+        #        sys_dict['Diboson',key[1]] = sys_dict[key]
+        #        del sys_dict[key]
+        #    if key[0] == 'WWW':
+        #        sys_dict['Triboson',key[1]] = sys_dict[key]
+        #        del sys_dict[key]
 
         # Only analyze categories with at least a small fraction of events to prevent negative yields
         self.logger.info("Getting final categories...")
