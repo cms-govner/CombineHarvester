@@ -7,8 +7,8 @@ class HistogramProcessor(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
-        self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known]
-        #self.sgnl_histnames = [sgnl for sgnl in self.sgnl_known]
+        self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known] # For private samples
+        #self.sgnl_histnames = [sgnl for sgnl in self.sgnl_known] # For central samples
         self.bkgd_known = ['charge_flips','fakes','Diboson','Triboson','convs']
         self.data_known = ['data']
 
@@ -50,14 +50,14 @@ class HistogramProcessor(object):
         self.logger.info("Setting up...")
         readfile = ROOT.TFile.Open(infile)
 
-        #Lists of names to pass on
+        # Lists of names to pass on
         categories=[] #e.g. 2los_ee_2j_1b
         data_names=[] #e.g. doubleEle
         sgnl_names=[] #e.g. ttH
         bkgd_names=[] #e.g. ttH
         sys_types=[] #e.g. Lumi
 
-        #Dicts for rates
+        # Dicts for rates
         data_dict={} #process,category:rate
         fakedata_dict={} #process,category:rate
         nom_dict={} #process,category:nominal rate
@@ -73,22 +73,27 @@ class HistogramProcessor(object):
 
         self.logger.info("Looping through histograms...")
 
-        #Main parsing loop
+        # Main parsing loop
         for key in readfile.GetListOfKeys():
             hist = readfile.Get(key.GetName())
 
-            #Get categorical information from histogram name
+            # Get categorical information from histogram name
             histname = hist.GetName().split('.')
             category,systematic,process = '','',''
             if(len(histname)==3): [category,systematic,process] = histname
             if(len(histname)==2): [category,process] = histname
+            
+            # Rename processes to be fed into DatacardMaker
+            # For renaming central sample processes:
             process = process.replace('tZq','tllq')
             process = process.replace('ttZ','ttll')
             process = process.replace('ttW','ttlnu')
+            # For accurate naming of backgrounds:
             process = process.replace('ttGJets','convs')
             process = process.replace('WZ','Diboson')
             process = process.replace('WWW','Triboson')
-            systematic = systematic.replace('FR','FR_shape')
+            # For accurate naming of systematics:
+            systematic = systematic.replace('FR','FR_FF') # Don't touch this without changing below!
 
             # For standard histogram files
             maxbin = 4
@@ -183,7 +188,7 @@ class HistogramProcessor(object):
                         bin_ratio = max(bin_ratio,0.0001)
 
                         #Special case for fake rate uncertainty; average effect over all njets bins
-                        if systematic in ['FRUP','FRDOWN']:
+                        if systematic in ['FR_FFUP','FR_FFDOWN']:
                             bin_yield = hist.Integral(1,hist.GetNbinsX())
                             bin_ratio = round(bin_yield/readfile.Get(category+'.'+process).Integral(1,hist.GetNbinsX()),8)
                             bin_ratio = max(bin_ratio,0.0001)
@@ -198,32 +203,6 @@ class HistogramProcessor(object):
                 if systematic.endswith('UP'): sys_type = systematic[:-2]
                 elif systematic.endswith('DOWN'): sys_type = systematic[:-4]
                 if sys_type not in sys_types: sys_types.append(sys_type)
-
-        # This is a hack... hopefully the names get fixed in the hist file in the future.
-        # Replace WZ and WWW with Diboson and Triboson (since this is what they really are)
-        #bkgd_names = [bkgd.replace('WZ','Diboson') for bkgd in bkgd_names]
-        #bkgd_names = [bkgd.replace('WWW','Triboson') for bkgd in bkgd_names]
-        #for key in nom_dict:
-        #    if key[0] == 'WZ':
-        #        nom_dict['Diboson',key[1]] = nom_dict[key]
-        #        del nom_dict[key]
-        #    if key[0] == 'WWW':
-        #        nom_dict['Triboson',key[1]] = nom_dict[key]
-        #        del nom_dict[key]
-        #for key in fakedata_dict:
-        #    if key[0] == 'WZ':
-        #        fakedata_dict['Diboson',key[1]] = fakedata_dict[key]
-        #        del fakedata_dict[key]
-        #    if key[0] == 'WWW':
-        #        fakedata_dict['Triboson',key[1]] = fakedata_dict[key]
-        #        del fakedata_dict[key]
-        #for key in sys_dict:
-        #    if key[0] == 'WZ':
-        #        sys_dict['Diboson',key[1]] = sys_dict[key]
-        #        del sys_dict[key]
-        #    if key[0] == 'WWW':
-        #        sys_dict['Triboson',key[1]] = sys_dict[key]
-        #        del sys_dict[key]
 
         # Only analyze categories with at least a small fraction of events to prevent negative yields
         self.logger.info("Getting final categories...")
@@ -253,6 +232,15 @@ class HistogramProcessor(object):
         #print data_dict
         #print nom_dict
 
+	# For roughly testing statistical effects
+	#for key in data_dict:
+        #    data_dict[key]=data_dict[key]*10
+	#for key in fakedata_dict:
+	#    fakedata_dict[key]=fakedata_dict[key]*10
+	#for key in nom_dict:
+	#    nom_dict[key]=nom_dict[key]*10
+
+        return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
         return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
 
     ##############################

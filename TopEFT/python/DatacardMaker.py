@@ -44,7 +44,7 @@ class DatacardMaker(object):
         #            cat_asimov += nom_dict[proc,cat]
         #        obs_rates[cat]=cat_asimov
 
-        #Actual data (hists not currently filled, but placeholders are present)
+        #Actual data
         else:
             obs_rates={}
             for cat in categories:
@@ -71,7 +71,7 @@ class DatacardMaker(object):
 
         #Fill the nominal MC rates
         self.logger.info("Adding MC rates...")
-        #self.cb.ForEachProc(lambda x: x.set_rate(nom_dict[x.process(),x.bin()]))
+        #self.cb.ForEachProc(lambda x: x.set_rate(nom_dict[x.process(),x.bin()])) # old
         self.cb.ForEachProc(lambda x: checkRate(x))
 
         #Round systematics (Only for debug purposes when viewing datacard! Keep full accuracy otherwise!)
@@ -159,7 +159,7 @@ class DatacardMaker(object):
                         PSISRUP = 0.95
 
                 if nom_dict[proc,cat]:
-                    #MCStats uncertainty (fully correlated, taken from nominal bin errors)
+                    #MCStats uncertainty, currently unused (fully correlated, taken from nominal bin errors)
                     #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
                     #FR_stats uncertainty (fully uncorrelated, taken from MC stats error)
                     if proc=='fakes': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'FR_stats'+cat.strip('C'),'lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
@@ -167,7 +167,7 @@ class DatacardMaker(object):
                     self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'lumi_13TeV_2017','lnN',ch.SystMap()( 1.023 ))
                     #Charge Flip rate uncertainty (fully correlated, flat rate, identical for all categories, Charge Flip process only)
                     if proc=='charge_flips': self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'ChargeFlips','lnN',ch.SystMap()( 1.30 ))
-                    #PDF rate uncertainty (correlated within process, flat rate, identical for all categories within process)
+                    #PDF rate uncertainty (correlated within parent process, flat rate, identical for all categories within process)
                     if proc in ['ttH']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_ggttH','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['ttll']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
@@ -175,7 +175,7 @@ class DatacardMaker(object):
                     if proc in ['tHq']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qgtHq','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['Diboson','Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_qq','lnN',ch.SystMap()( 1/PDFrate ))
                     if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
-                    #Q2 rate uncertainty (correlated within process, flat rate, identical for all categories within process)
+                    #Q2 rate uncertainty (correlated within parent process, flat rate, identical for all categories within process)
                     if proc in ['ttH']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttll']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
@@ -204,12 +204,13 @@ class DatacardMaker(object):
                         else:
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
+        # Make nuisance groups for easy testing in combine
         self.cb.SetGroup('TheoryNuisances',['^pdf.*','^QCDscale.*'])
         self.cb.SetGroup('bTagNuisances',['^hf.*','^lf.*','^CERR.*'])
         self.cb.SetGroup('DDBkgdNuisances',['FR_shape','ChargeFlips','^FR_stats.*'])
         self.cb.SetGroup('SystematicNuisances',['^.*'])
         
-        #Printout of signal and background yields (debug)
+        # Printout of signal and background yields (debug)
         if self.debug:
             background = {}
             signal = {}
@@ -224,7 +225,7 @@ class DatacardMaker(object):
                     signal[cat] += nom_dict[proc,cat]
                 print cat,signal[cat],background[cat]
 
-        #self.cb.PrintAll() #Print the datacard
+        #self.cb.PrintAll() #Print the entire datacard
         self.logger.info("Writing datacard '%s'...",self.outf)
         self.cb.WriteDatacard(self.outf)
 
@@ -289,9 +290,9 @@ if __name__ == "__main__":
     # Check for coefficient argument
     fake_data = False
     if len(sys.argv) == 2:
-        if sys.argv[1] in ['True', 'true', '1']:
+        if sys.argv[1].lower() in ['true', '1']:
             fake_data = True
-        elif sys.argv[1] in ['False', 'false', '0']:
+        elif sys.argv[1].lower() in ['false', '0']:
             fake_data = False
         else:
             logging.error("Value of argument 1 unrecognized!")
