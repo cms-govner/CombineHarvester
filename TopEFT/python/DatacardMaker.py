@@ -77,7 +77,7 @@ class DatacardMaker(object):
         #Round systematics (Only for debug purposes when viewing datacard! Keep full accuracy otherwise!)
         #for outerkey,outervalue in sys_dict.items():
         #    for innerkey,innervalue in outervalue.items():
-        #        sys_dict[outerkey][innerkey]=round(innervalue,4)
+        #        sys_dict[outerkey][innerkey]=round(innervalue,2)
 
         #Fill systematic rates
         for proc in sgnl_names+bkgd_names:
@@ -114,7 +114,7 @@ class DatacardMaker(object):
                 PDFrate = 1.0
                 Q2rate  = [1.0,1.0]
             if proc in ['convs']: # Unknown; conservative here
-                PDFrate = 1.5
+                PDFrate = 1.05
                 Q2rate = [0.90,1.10]
 
             for cat in categories:
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     console.setFormatter(frmt2)
     logging.getLogger('').addHandler(console)
 
-    # Check for coefficient argument
+    # Check for fake data argument
     fake_data = False
     if len(sys.argv) == 2:
         if sys.argv[1].lower() in ['true', '1']:
@@ -303,7 +303,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest20.root',fake_data)
+    dm.make('../hist_files/anatest22.root',fake_data)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")

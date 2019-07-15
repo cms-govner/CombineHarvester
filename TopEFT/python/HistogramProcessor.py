@@ -8,8 +8,12 @@ class HistogramProcessor(object):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known] # For private samples
-        #self.sgnl_histnames = [sgnl for sgnl in self.sgnl_known] # For central samples
         self.bkgd_known = ['charge_flips','fakes','Diboson','Triboson','convs']
+        #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq_16D'] # For central samples in anatest22
+        #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq'] # For central samples in anatest16
+        #self.sgnl_known = ['tllq']
+        #self.sgnl_histnames = ['tllq_16D']
+        #self.bkgd_known = []
         self.data_known = ['data']
 
         # Initialize reweight point for fake data
@@ -103,7 +107,7 @@ class HistogramProcessor(object):
             #if '4l' in category: maxbin=4
 
             if process in debug_processes:
-                for bin in range(1,maxbin+1): # Doesn't include bin 5
+                for bin in range(1,maxbin+1):
                     category_njet = self.name_bin(category,bin)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
@@ -111,7 +115,7 @@ class HistogramProcessor(object):
             #Logic for data
             if process in self.data_known:
                 if process not in data_names: data_names.append(process)
-                for bin in range(1,maxbin+1): # Doesn't include bin 5
+                for bin in range(1,maxbin+1):
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
                     bin_yield = hist.GetBinContent(bin,self.sm_pt)
@@ -122,7 +126,7 @@ class HistogramProcessor(object):
 
             # Obtain signal yields, being sure to use correct histograms
             if process in self.sgnl_histnames:
-                process = process.rsplit("_",1)[0]
+                process = process.rsplit("_",1)[0] # Removes "_16D" suffix
                 if process not in sgnl_names: sgnl_names.append(process)
             if process in self.bkgd_known:
                 if process not in bkgd_names: bkgd_names.append(process)
@@ -132,7 +136,7 @@ class HistogramProcessor(object):
                 self.logger.debug("Nominal Hist: %s",hist.GetName())
 
                 # Get nominal yields and yields for fake data
-                for bin in range(1,maxbin+1): # Doesn't include bin 5
+                for bin in range(1,maxbin+1):
                     # MC Nominal
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
@@ -232,14 +236,16 @@ class HistogramProcessor(object):
         #print data_dict
         #print nom_dict
 
-	# For roughly testing statistical effects
-	#for key in data_dict:
-        #    data_dict[key]=data_dict[key]*10
-	#for key in fakedata_dict:
-	#    fakedata_dict[key]=fakedata_dict[key]*10
-	#for key in nom_dict:
-	#    nom_dict[key]=nom_dict[key]*10
+        # For roughly testing statistical effects
+        #for key in data_dict:
+            #    data_dict[key]=data_dict[key]*10
+        #for key in fakedata_dict:
+        #    fakedata_dict[key]=fakedata_dict[key]*10
+        #for key in nom_dict:
+        #    nom_dict[key]=nom_dict[key]*10
 
+        #sgnl_names=['ttlnu','ttll','ttH','tllq','tHq'] # DELETE THIS!!!
+        #sgnl_names=['ttlnu','ttll','ttH','tHq'] # DELETE THIS!!!
         return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
         return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
 
