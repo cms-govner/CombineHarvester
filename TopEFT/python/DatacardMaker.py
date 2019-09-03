@@ -17,6 +17,8 @@ class DatacardMaker(object):
         self.chan = ['']        #Indistiguishable process subcategories i.e. for MC only
 
         self.outf = "EFT_MultiDim_Datacard.txt"
+        
+        self.minyield = 0.0000 # Minimum nominal process+category yield required
 
     def make(self,infile,fake_data=False):
         self.logger.info("Parsing input file!")
@@ -34,7 +36,8 @@ class DatacardMaker(object):
             for cat in categories:
                 cat_fakeyield = 0
                 for proc in sgnl_names+bkgd_names:
-                    cat_fakeyield += fakedata_dict[proc,cat]
+                    if nom_dict[proc,cat] > self.minyield: # Only use this bin if the process has meaningful yield
+                        cat_fakeyield += fakedata_dict[proc,cat]
                 obs_rates[cat]=cat_fakeyield
         #Asimov data
         #else:
@@ -50,7 +53,7 @@ class DatacardMaker(object):
             for cat in categories:
                 obs_rates[cat]=0
             for (proc, cat) in data_dict.keys():
-               if cat in categories: obs_rates[cat] += data_dict[proc,cat]
+                if cat in categories: obs_rates[cat] += data_dict[proc,cat]
 
         #Initialize structure of each observation (data) and process (MC signal and background)
         #Can be adjusted very heavily to specialize each era/process/category
@@ -66,12 +69,11 @@ class DatacardMaker(object):
 
         #Function for making sure bin yield > 0
         def checkRate(x):
-            if nom_dict[x.process(),x.bin()]>0:
+            if nom_dict[x.process(),x.bin()]>self.minyield:
                 x.set_rate(nom_dict[x.process(),x.bin()])
 
         #Fill the nominal MC rates
         self.logger.info("Adding MC rates...")
-        #self.cb.ForEachProc(lambda x: x.set_rate(nom_dict[x.process(),x.bin()])) # old
         self.cb.ForEachProc(lambda x: checkRate(x))
 
         #Round systematics (Only for debug purposes when viewing datacard! Keep full accuracy otherwise!)
@@ -158,7 +160,7 @@ class DatacardMaker(object):
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
 
-                if nom_dict[proc,cat]:
+                if nom_dict[proc,cat]>self.minyield: # Only add systematic if yield is nonzero.
                     #MCStats uncertainty, currently unused (fully correlated, taken from nominal bin errors)
                     #self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MCStats','lnN',ch.SystMap()( sys_dict[(proc,cat)]['MCSTATS']))
                     #FR_stats uncertainty (fully uncorrelated, taken from MC stats error)
@@ -184,7 +186,7 @@ class DatacardMaker(object):
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
-                    #PSISR for anatest14&15 ONLY
+                    #PSISR for anatest14&15. After that, it's included as up/down systematic. The hist file should overwrite this line anyway.
                     if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
                     #Standard uncertainties with usual UP/DOWN variations
                     #Includes FR_shape, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
@@ -197,12 +199,13 @@ class DatacardMaker(object):
                             sys_name = sys.lower()
 
                         if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
-                        if sys == 'ADHOCNJ':
-                            sys_name = 'nj'
-                            if not any([proc == 'ttll', proc == 'tllq' and '4l' in cat]):
-                                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'{0}_{1}'.format(sys_name,proc),'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
-                        else:
-                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                        #if sys in ['CERR1','CERR2']: # DEBUG for CERR. Might not want this!
+                        #    sysup = sys_dict[(proc,cat)][sys+'UP']
+                        #    sysdown = sys_dict[(proc,cat)][sys+'DOWN']
+                        #    sysavg = 1+(abs(sysup-1)+abs(sysdown-1))/2
+                        #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sysavg ))
+                        #else:
+                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
         # Make nuisance groups for easy testing in combine
         self.cb.SetGroup('TheoryNuisances',['^pdf.*','^QCDscale.*'])
@@ -303,7 +306,8 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest22.root',fake_data)
+    dm.make('../hist_files/anatest23_v3.root',fake_data)
+    #dm.make('../hist_files/anatest23_v3_MergeLepFl.root',fake_data)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")

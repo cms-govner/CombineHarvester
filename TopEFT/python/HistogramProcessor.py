@@ -1,6 +1,8 @@
 import logging
 import math
 import ROOT
+import matplotlib.pyplot as plt
+
 ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so')
 
 class HistogramProcessor(object):
@@ -9,10 +11,10 @@ class HistogramProcessor(object):
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
         self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known] # For private samples
         self.bkgd_known = ['charge_flips','fakes','Diboson','Triboson','convs']
-        #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq_16D'] # For central samples in anatest22
+        #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq_16D'] # For central samples in anatest22 onward
         #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq'] # For central samples in anatest16
         #self.sgnl_known = ['tllq']
-        #self.sgnl_histnames = ['tllq_16D']
+        #self.sgnl_histnames = ['ttll_16D']
         #self.bkgd_known = []
         self.data_known = ['data']
 
@@ -33,6 +35,9 @@ class HistogramProcessor(object):
         #self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
         self.rwgt_pt = ROOT.WCPoint()
         self.sm_pt = ROOT.WCPoint()
+        
+        # Minimal yield required
+        self.sumsignal_min = 0.01
 
     def name_bin(self,category,bin):
         # For standard histogram files
@@ -55,10 +60,10 @@ class HistogramProcessor(object):
         readfile = ROOT.TFile.Open(infile)
 
         # Lists of names to pass on
-        categories=[] #e.g. 2los_ee_2j_1b
+        categories=[] #e.g. 2lss_ee_2j_1b
         data_names=[] #e.g. doubleEle
         sgnl_names=[] #e.g. ttH
-        bkgd_names=[] #e.g. ttH
+        bkgd_names=[] #e.g. Diboson
         sys_types=[] #e.g. Lumi
 
         # Dicts for rates
@@ -126,7 +131,7 @@ class HistogramProcessor(object):
 
             # Obtain signal yields, being sure to use correct histograms
             if process in self.sgnl_histnames:
-                process = process.rsplit("_",1)[0] # Removes "_16D" suffix
+                process = process.rsplit("_",1)[0] # Removes "_16D" suffix of signal hists
                 if process not in sgnl_names: sgnl_names.append(process)
             if process in self.bkgd_known:
                 if process not in bkgd_names: bkgd_names.append(process)
@@ -142,7 +147,7 @@ class HistogramProcessor(object):
                     if category_njet not in categories: categories.append(category_njet)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),8)
                     nom_dict.update({(process,category_njet):bin_yield})
-                    # Fake data
+                    # Fake data -- Only add if nominal was significant
                     if fake_data:
                         fakedata_bin_yield = round(hist.GetBinContent(bin,self.rwgt_pt),8)
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
@@ -159,10 +164,10 @@ class HistogramProcessor(object):
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
                         if process in self.sgnl_known: # Determined by TH1EFT fit
-                            bin_yield = round(hist.GetBinFit(bin).evalPointError(self.sm_pt),8)
+                            bin_error = round(hist.GetBinFit(bin).evalPointError(self.sm_pt),8)
                         if process in self.bkgd_known: # Determined by sqrt(yield)
-                            bin_yield = round(math.sqrt(max(0,hist.GetBinContent(bin,self.sm_pt))),8)
-                        bin_ratio = 1+bin_yield/nom_dict[(process,category_njet)]
+                            bin_error = round(math.sqrt(max(0,hist.GetBinContent(bin,self.sm_pt))),8) # Ignore negative yields
+                        bin_ratio = 1+bin_error/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
 
                     #Create sys_dict key if it doesn't exit; can't edit a dict object that doesn't exist yet
@@ -175,14 +180,14 @@ class HistogramProcessor(object):
                 self.logger.debug("Systematic Hist: %s",hist.GetName())
                 if systematic not in sys_types: sys_types.append(systematic)
 
-                for bin in range(1,maxbin+1): # Doesn't include bin 5
+                for bin in range(1,maxbin+1):
                     # Check category exists. This is probably redundant as if it doesn't, it should 
                     #   give an error when calculating the ratio
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
 
                     #Calculate ratio to nominal
-                    #If the nominal yield is zero, set the ratio to 1.0 ### NO, don't include at all!
+                    #If the nominal yield is zero, don't include at all!
                     #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
                     bin_ratio = 1.0
                     if nom_dict[(process,category_njet)] != 0:
@@ -197,10 +202,11 @@ class HistogramProcessor(object):
                             bin_ratio = round(bin_yield/readfile.Get(category+'.'+process).Integral(1,hist.GetNbinsX()),8)
                             bin_ratio = max(bin_ratio,0.0001)
 
-                    #Create sys_dict key if it doesn't exist; can't edit a dict object that doesn't exist yet
-                    if not sys_dict.has_key((process,category_njet)):
-                        sys_dict[(process,category_njet)] = {}
-                    sys_dict[(process,category_njet)][systematic] = bin_ratio
+                        #Create sys_dict key if it doesn't exist; can't edit a dict object that doesn't exist yet
+                        if not sys_dict.has_key((process,category_njet)):
+                            sys_dict[(process,category_njet)] = {}
+                        sys_dict[(process,category_njet)][systematic] = bin_ratio # USE ME!!!
+                        #sys_dict[(process,category_njet)][systematic] = min(3.,bin_ratio) #BAD! DELETE ME!
 
                 #Append systematic type to list, but don't split into UP/DOWN
                 sys_type = systematic
@@ -220,7 +226,12 @@ class HistogramProcessor(object):
             for proc in sgnl_names:
                 sgnl += nom_dict[proc,cat]
                 if cat in debug_categories: self.logger.debug("%s %s",proc,str(nom_dict[proc,cat]))
-            if sgnl >= 0.01:
+            self.logger.debug("{} yield: {}".format(cat,sgnl+bkgd))
+            if sgnl+bkgd < 1:
+                self.logger.debug("Low yield for bin {}".format(cat))
+                for proc in sgnl_names+bkgd_names:
+                    self.logger.debug("    {} {}".format(proc,nom_dict[proc,cat]))
+            if sgnl >= self.sumsignal_min:
                 categories_nonzero.append(cat)
                 #if bkgd >= 0.01:
                 #    categories_nonzero.append(cat)
@@ -229,6 +240,11 @@ class HistogramProcessor(object):
             else:
                 self.logger.info("Skipping %s for low signal yield.",cat)
             if cat in debug_categories: self.logger.debug("%s %s %s",str(bkgd),str(sgnl),str(bkgd+sgnl))
+            
+        # Debugging problems that might exist in a single lepton category
+        #categories_nonzero = [cat for cat in categories_nonzero if '2l' in cat]
+        #categories_nonzero = [cat for cat in categories_nonzero if '3l' in cat]
+        #categories_nonzero = [cat for cat in categories_nonzero if '4l' in cat]
 
         self.logger.info( "{} Categories: {}".format(len(categories_nonzero),categories_nonzero) )
         self.logger.info( "{} Signals: {}".format(len(sgnl_names),sgnl_names) )
@@ -244,9 +260,16 @@ class HistogramProcessor(object):
         #for key in nom_dict:
         #    nom_dict[key]=nom_dict[key]*10
 
-        #sgnl_names=['ttlnu','ttll','ttH','tllq','tHq'] # DELETE THIS!!!
-        #sgnl_names=['ttlnu','ttll','ttH','tHq'] # DELETE THIS!!!
-        return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
+        #sgnl_names=['ttlnu','ttll','ttH','tllq','tHq'] # Debug only. For keeping signal ordering between private/central samples.
+
+        # Debug, plotting systematics
+        #sys_vallist = []
+        #for key in sys_dict:
+        #    sys_vallist.extend(list(sys_dict[key].values()))
+        #sys_vallist = [val for val in sys_vallist if val < 700]
+        #plt.hist(sys_vallist,100)
+        #plt.show()
+        
         return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
 
     ##############################
