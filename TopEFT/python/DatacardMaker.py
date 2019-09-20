@@ -1,5 +1,7 @@
 import sys
 import logging
+import numpy as np
+import matplotlib.pyplot as plt
 import CombineHarvester.CombineTools.ch as ch
 from HistogramProcessor import HistogramProcessor
 
@@ -39,14 +41,6 @@ class DatacardMaker(object):
                     if nom_dict[proc,cat] > self.minyield: # Only use this bin if the process has meaningful yield
                         cat_fakeyield += fakedata_dict[proc,cat]
                 obs_rates[cat]=cat_fakeyield
-        #Asimov data
-        #else:
-        #    for cat in categories:
-        #        cat_asimov = 0
-        #        for proc in sgnl_names+bkgd_names:
-        #            cat_asimov += nom_dict[proc,cat]
-        #        obs_rates[cat]=cat_asimov
-
         #Actual data
         else:
             obs_rates={}
@@ -228,9 +222,59 @@ class DatacardMaker(object):
                     signal[cat] += nom_dict[proc,cat]
                 print cat,signal[cat],background[cat]
 
-        #self.cb.PrintAll() #Print the entire datacard
+        #self.cb.PrintAll() # Print the entire datacard to terminal
         self.logger.info("Writing datacard '%s'...",self.outf)
         self.cb.WriteDatacard(self.outf)
+
+        # Debug, plotting systematics
+        if(0):
+            SystogramPoints = ([],[])
+            clusterPoints = ([],[],[])
+            
+            sys_fulltypes = []
+            for ip,proc in enumerate(sgnl_names+bkgd_names):
+                for cat in categories:
+                    for sys in sys_dict[proc,cat]:
+                        if sys != 'MCSTATS':
+                            if sys not in sys_fulltypes: sys_fulltypes.append(sys)
+                            if nom_dict[proc,cat] < 0: print("Found a nom zero!",nom_dict[proc,cat])
+                            if sys_dict[proc,cat][sys] < 0: print("Found a sys zero!")
+                            SystogramPoints[0].append(nom_dict[proc,cat])
+                            SystogramPoints[1].append(sys_dict[proc,cat][sys])
+                            clusterPoints[0].append(ip)
+                            clusterPoints[1].append(sys_fulltypes.index(sys))
+                            clusterPoints[2].append(sys_dict[proc,cat][sys])
+                        
+            plt.hist2d(x=SystogramPoints[0],y=SystogramPoints[1],bins=[70,80],range=[[0,35],[0,40]],cmin=1)
+            plt.colorbar()
+            plt.savefig('SystogramRvS.png')
+            plt.close()
+
+            plt.hist2d(x=SystogramPoints[0],y=SystogramPoints[1],bins=[100,80],range=[[0.0000001,1],[0,40]],cmin=1)
+            plt.colorbar()
+            plt.savefig('SystogramRvS_zoom.png')
+            plt.close()
+
+            plt.hist2d(x=np.log10(SystogramPoints[0]),y=SystogramPoints[1],bins=[100,80],range=[[-7,-0.1],[0,40]],cmin=1)
+            plt.colorbar()
+            plt.xlim(left=-7,right=-0.1)
+            plt.savefig('SystogramRvS_zoomlog.png')
+            plt.close()
+
+            newclusterPoints = ([],[])        
+            newclusterPoints[0].extend([clusterPoints[0][i] for i,kappa in enumerate(clusterPoints[2]) if kappa>2])
+            newclusterPoints[1].extend([clusterPoints[1][i] for i,kappa in enumerate(clusterPoints[2]) if kappa>2])
+            ax=plt.subplot(111)
+            h = ax.hist2d(x=newclusterPoints[0],y=newclusterPoints[1],bins=[len(sgnl_names+bkgd_names),len(sys_fulltypes)],range=[[0,len(sgnl_names+bkgd_names)],[0,len(sys_fulltypes)]],cmin=1)
+            plt.xticks([x+0.5 for x in range(len(sgnl_names+bkgd_names))],sgnl_names+bkgd_names,rotation=45)
+            plt.yticks([y+0.5 for y in range(len(sys_fulltypes))],sys_fulltypes)
+            plt.grid(1)
+            #ax.set_xticks(range(len(sgnl_names+bkgd_names)))
+            #ax.set_xticklabels(sgnl_names+bkgd_names)
+            #ax.set_yticks(range(len(sys_fulltypes)))
+            #ax.set_yticklabels(sys_fulltypes)
+            plt.colorbar(h[3],ax=ax)
+            plt.savefig('ClusterPvS.png')
 
     ##############################
     # Getter/Setter methods (mostly just pass-throughs)
@@ -306,8 +350,8 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    dm.make('../hist_files/anatest23_v3.root',fake_data)
-    #dm.make('../hist_files/anatest23_v3_MergeLepFl.root',fake_data)
+    #dm.make('../hist_files/anatest23_v3.root',fake_data)
+    dm.make('../hist_files/anatest23_v3_MergeLepFl.root',fake_data)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")

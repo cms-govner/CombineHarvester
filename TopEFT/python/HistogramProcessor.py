@@ -60,7 +60,7 @@ class HistogramProcessor(object):
         readfile = ROOT.TFile.Open(infile)
 
         # Lists of names to pass on
-        categories=[] #e.g. 2lss_ee_2j_1b
+        categories=[] #e.g. C_2lss_ee_2j_1b
         data_names=[] #e.g. doubleEle
         sgnl_names=[] #e.g. ttH
         bkgd_names=[] #e.g. Diboson
@@ -146,8 +146,9 @@ class HistogramProcessor(object):
                     category_njet = self.name_bin(category,bin)
                     if category_njet not in categories: categories.append(category_njet)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),8)
-                    nom_dict.update({(process,category_njet):bin_yield})
-                    # Fake data -- Only add if nominal was significant
+                    nom_dict.update({(process,category_njet):max(0,bin_yield)})
+                    if bin_yield < 0: self.logger.debug("{} {} {} Nominal yield negative!".format(process,category_njet,bin_yield))
+                    # Fake data
                     if fake_data:
                         fakedata_bin_yield = round(hist.GetBinContent(bin,self.rwgt_pt),8)
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
@@ -160,13 +161,10 @@ class HistogramProcessor(object):
 
                     #Calculate ratio to nominal
                     #If the nominal yield is zero, set the ratio to 1.0
-                    #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
-                    bin_ratio = 1.0
-                    if nom_dict[(process,category_njet)] != 0:
-                        if process in self.sgnl_known: # Determined by TH1EFT fit
-                            bin_error = round(hist.GetBinFit(bin).evalPointError(self.sm_pt),8)
-                        if process in self.bkgd_known: # Determined by sqrt(yield)
-                            bin_error = round(math.sqrt(max(0,hist.GetBinContent(bin,self.sm_pt))),8) # Ignore negative yields
+                    #If the systematic yield is 0, set the ratio to 0.0001
+                    # MC Stats is only for fake rate for now!
+                    if nom_dict[(process,category_njet)] > 0:
+                        bin_error = round(hist.GetBinError(bin),8)
                         bin_ratio = 1+bin_error/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)
 
@@ -190,9 +188,8 @@ class HistogramProcessor(object):
                     #If the nominal yield is zero, don't include at all!
                     #If the systematic yield is 0, set the ratio to 0.0001 (Combine doesn't like 0)
                     bin_ratio = 1.0
-                    if nom_dict[(process,category_njet)] != 0:
+                    if nom_dict[(process,category_njet)] > 0:
                         bin_yield = round(hist.GetBinContent(bin,self.sm_pt),8)
-                        #bin_ratio = bin_yield/nom_dict[(process,category_njet)]
                         bin_ratio = round(bin_yield/nom_dict[(process,category_njet)],8)
                         bin_ratio = max(bin_ratio,0.0001)
 
@@ -206,7 +203,7 @@ class HistogramProcessor(object):
                         if not sys_dict.has_key((process,category_njet)):
                             sys_dict[(process,category_njet)] = {}
                         sys_dict[(process,category_njet)][systematic] = bin_ratio # USE ME!!!
-                        #sys_dict[(process,category_njet)][systematic] = min(3.,bin_ratio) #BAD! DELETE ME!
+                        #sys_dict[(process,category_njet)][systematic] = min(1.5,bin_ratio) #BAD! DELETE ME!
 
                 #Append systematic type to list, but don't split into UP/DOWN
                 sys_type = systematic
@@ -269,7 +266,8 @@ class HistogramProcessor(object):
         #sys_vallist = [val for val in sys_vallist if val < 700]
         #plt.hist(sys_vallist,100)
         #plt.show()
-        
+
+
         return(categories_nonzero, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict)
 
     ##############################
