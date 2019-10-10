@@ -3,7 +3,7 @@ ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so
 
 class CombineLepFlavors(object):
     def __init__(self):
-        self.Filename = "anatest23_v3.root"
+        self.Filename = "anatest24.root"
 
     def execute(self):
         File = ROOT.TFile.Open('$CMSSW_BASE/src/CombineHarvester/TopEFT/hist_files/{}'.format(self.Filename))

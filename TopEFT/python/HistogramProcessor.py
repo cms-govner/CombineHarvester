@@ -9,9 +9,9 @@ class HistogramProcessor(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
-        self.sgnl_histnames = [sgnl + '_' + '16D' for sgnl in self.sgnl_known] # For private samples
+        self.sgnl_histnames_private = [sgnl + '_' + '16D' for sgnl in self.sgnl_known] # For private samples
+        self.sgnl_histnames_central = ['ttH','tllq','ttll','ttlnu','tHq_16D'] # For central samples in anatest22 onward
         self.bkgd_known = ['charge_flips','fakes','Diboson','Triboson','convs']
-        #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq_16D'] # For central samples in anatest22 onward
         #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq'] # For central samples in anatest16
         #self.sgnl_known = ['tllq']
         #self.sgnl_histnames = ['ttll_16D']
@@ -24,9 +24,9 @@ class HistogramProcessor(object):
             'ctW','ctp','cpQM','ctZ','ctG','cbW','cpQ3','cptb',
             'cpt','cQl3i','cQlMi','cQei','ctli','ctei','ctlSi','ctlTi'
         ]
-        for op in self.operators_fakedata:
+        #for op in self.operators_fakedata:
             # All set to 1
-            WCPoint_string += '_{op}_1'.format(op=op)
+        #    WCPoint_string += '_{op}_1'.format(op=op)
 
             # 2-sigma values for a few operators
             #if op == 'ctW': WCPoint_string += '_{op}_3.56'.format(op=op)
@@ -55,10 +55,15 @@ class HistogramProcessor(object):
         #if "4l" in category:
         #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==3 else '', bin)
 
-    def process(self,infile,fake_data):
+    def process(self,infile,fake_data,central):
         self.logger.info("Setting up...")
         readfile = ROOT.TFile.Open(infile)
-
+        
+        sgnl_histnames = None
+        if central:
+            sgnl_histnames = self.sgnl_histnames_central
+        else:
+            sgnl_histnames = self.sgnl_histnames_private
         # Lists of names to pass on
         categories=[] #e.g. C_2lss_ee_2j_1b
         data_names=[] #e.g. doubleEle
@@ -127,10 +132,10 @@ class HistogramProcessor(object):
                     data_dict.update({(process,category_njet):bin_yield})
 
             # Logic for MC yields below
-            if process not in self.bkgd_known+self.sgnl_histnames: continue
+            if process not in self.bkgd_known+sgnl_histnames: continue
 
             # Obtain signal yields, being sure to use correct histograms
-            if process in self.sgnl_histnames:
+            if process in sgnl_histnames:
                 process = process.rsplit("_",1)[0] # Removes "_16D" suffix of signal hists
                 if process not in sgnl_names: sgnl_names.append(process)
             if process in self.bkgd_known:
@@ -164,6 +169,7 @@ class HistogramProcessor(object):
                     #If the systematic yield is 0, set the ratio to 0.0001
                     # MC Stats is only for fake rate for now!
                     if nom_dict[(process,category_njet)] > 0:
+                        #bin_error = round(math.sqrt(hist.GetBinContent(bin,self.sm_pt)),8)
                         bin_error = round(hist.GetBinError(bin),8)
                         bin_ratio = 1+bin_error/nom_dict[(process,category_njet)]
                         bin_ratio = max(bin_ratio,0.0001)

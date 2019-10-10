@@ -2,6 +2,7 @@ import sys
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 import CombineHarvester.CombineTools.ch as ch
 from HistogramProcessor import HistogramProcessor
 
@@ -22,9 +23,9 @@ class DatacardMaker(object):
         
         self.minyield = 0.0000 # Minimum nominal process+category yield required
 
-    def make(self,infile,fake_data=False):
+    def make(self,infile,fake_data=False,central=False):
         self.logger.info("Parsing input file!")
-        (categories, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = self.hp.process(infile,fake_data)
+        (categories, data_names, data_dict, fakedata_dict, sgnl_names, bkgd_names, nom_dict, sys_types, sys_dict) = self.hp.process(infile,fake_data,central)
         self.logger.info("Done parsing input file")
         self.logger.info("Now creating Datacard!")
 
@@ -199,7 +200,35 @@ class DatacardMaker(object):
                         #    sysavg = 1+(abs(sysup-1)+abs(sysdown-1))/2
                         #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sysavg ))
                         #else:
-                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                        
+                        # Largest of errors
+                        #if sys in ['JES'] and ((sys_dict[(proc,cat)][sys+'DOWN']-1)*(sys_dict[(proc,cat)][sys+'UP']-1))>0:
+                        #if sys in ['JES']:
+                        #    uperr = sys_dict[(proc,cat)][sys+'UP']-1
+                        #    downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
+                        #    symerr = max(abs(uperr),abs(downerr))
+                        #    if uperr<0:
+                        #        sym_JES = 1-symerr
+                        #    else:
+                        #        sym_JES = 1+symerr
+                        #    #print("Symmetrizing errors: {}, {} for rate {}".format(downerr,uperr,nom_dict[(proc,cat)]))
+                        #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
+                        # Partial Symm, Average.
+                        #if sys in ['JES'] and ((sys_dict[(proc,cat)][sys+'DOWN']-1)*(sys_dict[(proc,cat)][sys+'UP']-1))>0:
+                        #    sym_JES = (sys_dict[(proc,cat)][sys+'DOWN']+sys_dict[(proc,cat)][sys+'UP'])/2
+                        #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
+                        # Full Symm, Average.
+                        if sys in ['JES']:
+                            uperr = sys_dict[(proc,cat)][sys+'UP']-1
+                            downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
+                            symerr = (abs(uperr)+abs(downerr))/2
+                            if uperr<0:
+                                sym_JES = 1-symerr
+                            else:
+                                sym_JES = 1+symerr
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
+                        else:
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
         # Make nuisance groups for easy testing in combine
         self.cb.SetGroup('TheoryNuisances',['^pdf.*','^QCDscale.*'])
@@ -335,23 +364,15 @@ if __name__ == "__main__":
     logging.getLogger('').addHandler(console)
 
     # Check for fake data argument
-    fake_data = False
-    if len(sys.argv) == 2:
-        if sys.argv[1].lower() in ['true', '1']:
-            fake_data = True
-        elif sys.argv[1].lower() in ['false', '0']:
-            fake_data = False
-        else:
-            logging.error("Value of argument 1 unrecognized!")
-            sys.exit()
-    if len(sys.argv) > 2:
-        logging.error("Only one argument allowed!")
-        sys.exit()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fakedata', help="Flag to use fake data instead of real data", default=False, action='store_true')
+    parser.add_argument('--central', help="Flag to use central signal samples instead of private", default=False, action='store_true')
+    args = parser.parse_args()
 
     # Run datacard maker
     dm = DatacardMaker()
     #dm.make('../hist_files/anatest23_v3.root',fake_data)
-    dm.make('../hist_files/anatest23_v3_MergeLepFl.root',fake_data)
+    dm.make('../hist_files/anatest24_MergeLepFl.root',args.fakedata,args.central)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")
