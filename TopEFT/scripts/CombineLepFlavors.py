@@ -19,7 +19,7 @@ class CombineLepFlavors(object):
             if '2l' in category:
                 if 'ee' in category:
                     emu = File.Get(key.GetName().replace('ee','emu'))
-                    mumu = File.Get(key.GetName().replace('ee','emu'))
+                    mumu = File.Get(key.GetName().replace('ee','mumu'))
                     hist.Add(emu)
                     hist.Add(mumu)
                     hist.SetName(key.GetName().replace('_ee',''))
