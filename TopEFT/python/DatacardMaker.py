@@ -15,7 +15,9 @@ class DatacardMaker(object):
         self.cb = ch.CombineHarvester()
         self.cb.SetVerbosity(0)
 
-        self.debug = 0
+        self.debug = 1
+        self.yieldTeX = 0
+        
         self.eras = ['2017']    #Data eras
         self.chan = ['']        #Indistiguishable process subcategories i.e. for MC only
 
@@ -249,7 +251,80 @@ class DatacardMaker(object):
                     background[cat] += nom_dict[proc,cat]
                 for proc in sgnl_names:
                     signal[cat] += nom_dict[proc,cat]
-                print cat,signal[cat],background[cat]
+                print cat,signal[cat]+background[cat],signal[cat],background[cat]
+        
+        # Printout of yield table in TeX form
+        if self.yieldTeX:
+            print ""
+            print "TeX for yield table:"
+            # First sum up the njet categories
+            categories_combj = [cat.rsplit('_',1)[0].replace('_','\_') for cat in categories]
+            categories_combj = list(set(categories_combj))
+            categories_combj.sort()
+            combj_yields = {}
+            combj_data = {}
+            for cat in categories:
+                for proc in bkgd_names+sgnl_names:
+                    combj_yields[(proc,cat.rsplit('_',1)[0].replace('_','\_'))]=0
+                    combj_data[cat.rsplit('_',1)[0].replace('_','\_')]=0
+            for cat in categories:
+                combj_data[cat.rsplit('_',1)[0].replace('_','\_')] += obs_rates[cat]
+                for proc in bkgd_names+sgnl_names:
+                    combj_yields[(proc,cat.rsplit('_',1)[0].replace('_','\_'))] += nom_dict[proc,cat]
+
+            # Print category line
+            print '& '+' & '.join(categories_combj)+' \\\\'
+            print '\hline'
+            # Print background yields
+            for proc in bkgd_names:
+                line = proc
+                for cat in categories_combj:
+                    line += ' & '+'%.2f'%combj_yields[proc,cat]
+                print line+' \\\\'
+            print '\hline'
+            # Print sum of backgrounds
+            line = "Sum Background:"
+            for cat in categories_combj:
+                sum_bkgd = 0
+                for proc in bkgd_names:
+                    sum_bkgd += combj_yields[proc,cat]
+                line += ' & '+'%.2f'%sum_bkgd
+            print line+' \\\\'
+            del line
+            print '\hline'
+            # Print signal yields
+            for proc in sgnl_names:
+                line = proc
+                for cat in categories_combj:
+                    line += ' & '+'%.2f'%combj_yields[proc,cat]
+                print line+' \\\\'
+            print '\hline'
+            # Print sum of signals
+            line = "Sum Signal:"
+            for cat in categories_combj:
+                sum_sgnl = 0
+                for proc in sgnl_names:
+                    sum_sgnl += combj_yields[proc,cat]
+                line += ' & '+'%.2f'%sum_sgnl
+            print line+' \\\\'
+            del line
+            print '\hline\hline'
+            # Print sum of signal and background
+            line = "Sum S+B:"
+            for cat in categories_combj:
+                sum = 0
+                for proc in sgnl_names+bkgd_names:
+                    sum += combj_yields[proc,cat]
+                line += ' & '+'%.2f'%sum
+            print line+' \\\\'
+            del line
+            # Print data
+            line = "Data:"
+            for cat in categories_combj:
+                line += ' & '+'%.0f'%combj_data[cat]
+            print line+' \\\\'
+            del line
+            print ""
 
         #self.cb.PrintAll() # Print the entire datacard to terminal
         self.logger.info("Writing datacard '%s'...",self.outf)
