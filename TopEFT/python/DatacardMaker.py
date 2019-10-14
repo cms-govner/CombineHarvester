@@ -15,7 +15,7 @@ class DatacardMaker(object):
         self.cb = ch.CombineHarvester()
         self.cb.SetVerbosity(0)
 
-        self.debug = 1
+        self.debug = 0
         self.yieldTeX = 0
         
         self.eras = ['2017']    #Data eras
@@ -187,6 +187,16 @@ class DatacardMaker(object):
                     if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
                     #Standard uncertainties with usual UP/DOWN variations
                     #Includes FR_shape, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
+                    if 'MUFUP' in sys_dict[(proc,cat)].keys():
+                        MUFUP = 1-sys_dict[(proc,cat)]['MUFUP']
+                        MUFDOWN = 1-sys_dict[(proc,cat)]['MUFDOWN']
+                        MURUP = 1-sys_dict[(proc,cat)]['MURUP']
+                        MURDOWN = 1-sys_dict[(proc,cat)]['MURDOWN']
+                        MUFMURUP = MUFUP+MURUP
+                        MUFMURDOWN = MUFDOWN+MURDOWN
+                        MUFRUP = 1+max([(abs(MUFUP),MUFUP),(abs(MURUP),MURUP),(abs(MUFUP+MURUP),MUFUP+MURUP)], key = lambda i : i[0])[1]
+                        MUFRDOWN = 1+max([(abs(MUFDOWN),MUFDOWN),(abs(MURDOWN),MURDOWN),(abs(MUFDOWN+MURDOWN),MUFDOWN+MURDOWN)], key = lambda i : i[0])[1]
+                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MUFR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
                     for sys in sys_types:
                         # Use CMS-standard names for uncertainties
                         sys_name = sys
@@ -229,7 +239,7 @@ class DatacardMaker(object):
                             else:
                                 sym_JES = 1+symerr
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
-                        else:
+                        elif 'MU' not in sys: # Already took care of MUF and MUR, so don't add them again
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
         # Make nuisance groups for easy testing in combine
@@ -447,7 +457,7 @@ if __name__ == "__main__":
     # Run datacard maker
     dm = DatacardMaker()
     #dm.make('../hist_files/anatest23_v3.root',fake_data)
-    dm.make('../hist_files/anatest24_MergeLepFl.root',args.fakedata,args.central)
+    dm.make('../hist_files/anatest25_MergeLepFl.root',args.fakedata,args.central)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
 
     logging.info("Logger shutting down!")
