@@ -31,6 +31,21 @@ class DatacardMaker(object):
         self.logger.info("Done parsing input file")
         self.logger.info("Now creating Datacard!")
 
+        if self.debug:
+            samedirdict = {}
+            for sys in sys_types:
+                if 'UP' in sys:
+                    samedirdict[sys[:-2]]=[0.,0.]
+                    for proc in sgnl_names+bkgd_names:
+                        for cat in categories:
+                            if sys not in sys_dict[(proc,cat)].keys(): continue
+                            #print sys_dict[(proc,cat)].keys()
+                            upfl = sys_dict[(proc,cat)][sys]
+                            downfl = sys_dict[(proc,cat)][sys[:-2]+'DOWN']
+                            samedirdict[sys[:-2]][0] += 1
+                            if (upfl-1)*(downfl-1)>0: samedirdict[sys[:-2]][1] += 1
+                    print sys[:-2], round(100*samedirdict[sys[:-2]][1]/samedirdict[sys[:-2]][0],1)
+
         cats = list(enumerate(categories))  #Process bins. Must be list of tuple like this
 
         #Fill observation
@@ -122,11 +137,11 @@ class DatacardMaker(object):
                         PSISRDOWN = 0.95
                         PSISRUP = 1.05
                     if '5j' in cat:
-                        PSISRDOWN = 0.975
-                        PSISRUP = 1.025
+                        PSISRDOWN = 0.983333
+                        PSISRUP = 1.016667
                     if '6j' in cat:
-                        PSISRDOWN = 1.025
-                        PSISRUP = 0.975
+                        PSISRDOWN = 1.016667
+                        PSISRUP = 0.983333
                     if '7j' in cat:
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
@@ -135,11 +150,11 @@ class DatacardMaker(object):
                         PSISRDOWN = 0.95
                         PSISRUP = 1.05
                     if '3j' in cat:
-                        PSISRDOWN = 0.975
-                        PSISRUP = 1.025
+                        PSISRDOWN = 0.983333
+                        PSISRUP = 1.016667
                     if '4j' in cat:
-                        PSISRDOWN = 1.025
-                        PSISRUP = 0.975
+                        PSISRDOWN = 1.016667
+                        PSISRUP = 0.983333
                     if '5j' in cat:
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
@@ -148,11 +163,11 @@ class DatacardMaker(object):
                         PSISRDOWN = 0.95
                         PSISRUP = 1.05
                     if '2j' in cat:
-                        PSISRDOWN = 0.975
-                        PSISRUP = 1.025
+                        PSISRDOWN = 0.983333
+                        PSISRUP = 1.016667
                     if '3j' in cat:
-                        PSISRDOWN = 1.025
-                        PSISRUP = 0.975
+                        PSISRDOWN = 1.016667
+                        PSISRUP = 0.983333
                     if '4j' in cat:
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
@@ -196,6 +211,10 @@ class DatacardMaker(object):
                         MUFMURDOWN = MUFDOWN+MURDOWN
                         MUFRUP = 1+max([(abs(MUFUP),MUFUP),(abs(MURUP),MURUP),(abs(MUFUP+MURUP),MUFUP+MURUP)], key = lambda i : i[0])[1]
                         MUFRDOWN = 1+max([(abs(MUFDOWN),MUFDOWN),(abs(MURDOWN),MURDOWN),(abs(MUFDOWN+MURDOWN),MUFDOWN+MURDOWN)], key = lambda i : i[0])[1]
+                        #if MUFRUP<0: print "MUFRUP:",MUFUP,MURUP,MUFUP+MURUP, nom_dict[(proc,cat)]
+                        #if MUFRDOWN<0: print "MUFRDOWN:",MUFDOWN,MURDOWN,MUFDOWN+MURDOWN, nom_dict[(proc,cat)]
+                        MUFRUP = max(MUFRUP,0.0001)
+                        MUFRDOWN = max(MUFRDOWN,0.0001)
                         self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MUFR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
                     for sys in sys_types:
                         # Use CMS-standard names for uncertainties
@@ -230,14 +249,25 @@ class DatacardMaker(object):
                         #    sym_JES = (sys_dict[(proc,cat)][sys+'DOWN']+sys_dict[(proc,cat)][sys+'UP'])/2
                         #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
                         # Full Symm, Average.
-                        if sys in ['JES']:
-                            uperr = sys_dict[(proc,cat)][sys+'UP']-1
-                            downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
-                            symerr = (abs(uperr)+abs(downerr))/2
-                            if uperr<0:
-                                sym_JES = 1-symerr
-                            else:
-                                sym_JES = 1+symerr
+                        if sys in ['JES','PU','PDF']:
+                            #uperr = sys_dict[(proc,cat)][sys+'UP']-1
+                            #downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
+                            #symerr = (abs(uperr)+abs(downerr))/2
+                            #if uperr<0:
+                            #    sym_JES = 1-symerr
+                            #else:
+                            #    sym_JES = 1+symerr
+                            upjesabs = upjes = sys_dict[(proc,cat)][sys+'UP']
+                            downjesabs = downjes = sys_dict[(proc,cat)][sys+'DOWN']
+                            if upjes<1: upjesabs=1/upjes
+                            if downjes<1: downjesabs=1/downjes
+                            sym_JES = (upjesabs+downjesabs)/2
+                            if (upjes-1)*(downjes-1)>0: # Same direction
+                                if upjes < 1 and upjes<downjes: # e.g. up=0.8,down=0.98
+                                    sym_JES = 1/sym_JES
+                                if upjes > 1 and upjes<downjes: # e.g. up=1.02,down=1.2
+                                    sym_JES = 1/sym_JES
+                            elif(upjes<1): sym_JES = 1/sym_JES # Opposite direction
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
                         elif 'MU' not in sys: # Already took care of MUF and MUR, so don't add them again
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
@@ -456,9 +486,9 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    #dm.make('../hist_files/anatest23_v3.root',fake_data)
+    #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',args.fakedata,args.central)
     dm.make('../hist_files/anatest25_MergeLepFl.root',args.fakedata,args.central)
-    #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',fake_data)
+    #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',args.fakedata,args.central) # Unblinding talk
 
     logging.info("Logger shutting down!")
     logging.shutdown()
