@@ -24,6 +24,15 @@ class DatacardMaker(object):
         self.outf = "EFT_MultiDim_Datacard.txt"
         
         self.minyield = 0.0000 # Minimum nominal process+category yield required
+        
+    def name_bin(self,category,bin):
+        # For standard histogram files
+        if "2lss" in category:
+            return '{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+3)
+        if "3l" in category:
+            return '{0}_{1}{2}j'.format(category, 'ge' if bin==4 else '', bin+1)
+        if "4l" in category:
+            return '{0}_{1}{2}j'.format(category, 'ge' if bin==3 else '', bin+1)
 
     def make(self,infile,fake_data=False,central=False):
         self.logger.info("Parsing input file!")
@@ -31,6 +40,7 @@ class DatacardMaker(object):
         self.logger.info("Done parsing input file")
         self.logger.info("Now creating Datacard!")
 
+        # Debug. Check % of bins with same-direction systematic fluctuatinos for each systematic
         if self.debug:
             samedirdict = {}
             for sys in sys_types:
@@ -45,6 +55,41 @@ class DatacardMaker(object):
                             samedirdict[sys[:-2]][0] += 1
                             if (upfl-1)*(downfl-1)>0: samedirdict[sys[:-2]][1] += 1
                     print sys[:-2], round(100*samedirdict[sys[:-2]][1]/samedirdict[sys[:-2]][0],1)
+                    
+        # Implement Rule-based JES
+        JES_helper = {}
+        cats_noNJ = [cats.rsplit('_',1)[0] for cats in categories]
+        for proc in sgnl_names+bkgd_names:
+            for cat_noNJ in cats_noNJ:
+                if proc in ['fakes','charge_flips']: continue
+                print proc
+                #for cat in categories:
+                #    print sys_dict[(proc,cat)].keys()
+                nj_nom=[]
+                nj_jesup=[]
+                nj_jesdown=[]
+                for cat in categories:
+                    if cat_noNJ in cat:
+                        if 'JES' in sys_dict[(proc,cat)]:
+                            nj_nom.append(nom_dict[(proc,cat)])
+                            nj_jesup.append(sys_dict[(proc,cat)])
+                            nj_jesdown.append(sys_dict[(proc,cat)])
+                        else:
+                            nj_nom.append(0)
+                            nj_jesup.append(0)
+                            nj_jesdown.append(0)
+                peakbin = nj_nom.index(max(nj_nom))
+                for idx,njbin in enumerate(nj_nom):
+                    cat = self.name_bin(cat_noNJ,idx+1)
+                    print cat
+                    updir = None
+                    if idx<peakbin: updir = "NEG"
+                    if idx>peakbin: updir = "POS"
+                    if idx==3: updir = "POS"
+                    if idx==peakbin:
+                        if nj_jesup[idx]>=nj_nom[idx]: updir = "POS"
+                        if nj_jesup[idx]<nj_nom[idx]: updir = "NEG"
+                    JES_helper[(proc,cat)] = updir
 
         cats = list(enumerate(categories))  #Process bins. Must be list of tuple like this
 
@@ -138,10 +183,10 @@ class DatacardMaker(object):
                         PSISRUP = 1.05
                     if '5j' in cat:
                         PSISRDOWN = 0.983333
-                        PSISRUP = 1.016667
+                        PSISRUP = 1.016667                        
                     if '6j' in cat:
                         PSISRDOWN = 1.016667
-                        PSISRUP = 0.983333
+                        PSISRUP = 0.983333                        
                     if '7j' in cat:
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
@@ -151,10 +196,10 @@ class DatacardMaker(object):
                         PSISRUP = 1.05
                     if '3j' in cat:
                         PSISRDOWN = 0.983333
-                        PSISRUP = 1.016667
+                        PSISRUP = 1.016667                        
                     if '4j' in cat:
                         PSISRDOWN = 1.016667
-                        PSISRUP = 0.983333
+                        PSISRUP = 0.983333                        
                     if '5j' in cat:
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
@@ -164,10 +209,10 @@ class DatacardMaker(object):
                         PSISRUP = 1.05
                     if '2j' in cat:
                         PSISRDOWN = 0.983333
-                        PSISRUP = 1.016667
+                        PSISRUP = 1.016667                        
                     if '3j' in cat:
                         PSISRDOWN = 1.016667
-                        PSISRUP = 0.983333
+                        PSISRUP = 0.983333                        
                     if '4j' in cat:
                         PSISRDOWN = 1.05
                         PSISRUP = 0.95
@@ -249,7 +294,9 @@ class DatacardMaker(object):
                         #    sym_JES = (sys_dict[(proc,cat)][sys+'DOWN']+sys_dict[(proc,cat)][sys+'UP'])/2
                         #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
                         # Full Symm, Average.
-                        if sys in ['JES','PU','PDF']:
+                        if sys in ['JES']:
+                        #if sys in ['JES','PU','PDF']:
+                            # Simple, problematic average
                             #uperr = sys_dict[(proc,cat)][sys+'UP']-1
                             #downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
                             #symerr = (abs(uperr)+abs(downerr))/2
@@ -257,17 +304,23 @@ class DatacardMaker(object):
                             #    sym_JES = 1-symerr
                             #else:
                             #    sym_JES = 1+symerr
+                            # More complex average
                             upjesabs = upjes = sys_dict[(proc,cat)][sys+'UP']
                             downjesabs = downjes = sys_dict[(proc,cat)][sys+'DOWN']
                             if upjes<1: upjesabs=1/upjes
                             if downjes<1: downjesabs=1/downjes
                             sym_JES = (upjesabs+downjesabs)/2
-                            if (upjes-1)*(downjes-1)>0: # Same direction
-                                if upjes < 1 and upjes<downjes: # e.g. up=0.8,down=0.98
-                                    sym_JES = 1/sym_JES
-                                if upjes > 1 and upjes<downjes: # e.g. up=1.02,down=1.2
-                                    sym_JES = 1/sym_JES
-                            elif(upjes<1): sym_JES = 1/sym_JES # Opposite direction
+                            #if (upjes-1)*(downjes-1)>0: # Same direction
+                            #    if upjes < 1 and upjes<downjes: # e.g. up=0.8,down=0.98
+                            #        sym_JES = 1/sym_JES
+                            #    if upjes > 1 and upjes<downjes: # e.g. up=1.02,down=1.2
+                            #        sym_JES = 1/sym_JES
+                            #elif(upjes<1): sym_JES = 1/sym_JES # Opposite direction
+                            if JES_helper[(proc,cat)]=="NEG":
+                                sym_JES = 1/sym_JES
+                            if sym_JES > 2.:
+                                print "Big JES! {}".format(sym_JES)
+                                sym_JES = min(3.,sym_JES)
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
                         elif 'MU' not in sys: # Already took care of MUF and MUR, so don't add them again
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
