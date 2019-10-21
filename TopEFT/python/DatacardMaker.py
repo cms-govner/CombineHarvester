@@ -62,9 +62,6 @@ class DatacardMaker(object):
         for proc in sgnl_names+bkgd_names:
             for cat_noNJ in cats_noNJ:
                 if proc in ['fakes','charge_flips']: continue
-                print proc
-                #for cat in categories:
-                #    print sys_dict[(proc,cat)].keys()
                 nj_nom=[]
                 nj_jesup=[]
                 nj_jesdown=[]
@@ -81,7 +78,6 @@ class DatacardMaker(object):
                 peakbin = nj_nom.index(max(nj_nom))
                 for idx,njbin in enumerate(nj_nom):
                     cat = self.name_bin(cat_noNJ,idx+1)
-                    print cat
                     updir = None
                     if idx<peakbin: updir = "NEG"
                     if idx>peakbin: updir = "POS"
@@ -243,7 +239,7 @@ class DatacardMaker(object):
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
-                    #PSISR for anatest14&15. After that, it's included as up/down systematic. The hist file should overwrite this line anyway.
+                    #PSISR. Overwrites hist file, which should only be correct startnig with anatest26.
                     if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
                     #Standard uncertainties with usual UP/DOWN variations
                     #Includes FR_shape, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
@@ -256,8 +252,6 @@ class DatacardMaker(object):
                         MUFMURDOWN = MUFDOWN+MURDOWN
                         MUFRUP = 1+max([(abs(MUFUP),MUFUP),(abs(MURUP),MURUP),(abs(MUFUP+MURUP),MUFUP+MURUP)], key = lambda i : i[0])[1]
                         MUFRDOWN = 1+max([(abs(MUFDOWN),MUFDOWN),(abs(MURDOWN),MURDOWN),(abs(MUFDOWN+MURDOWN),MUFDOWN+MURDOWN)], key = lambda i : i[0])[1]
-                        #if MUFRUP<0: print "MUFRUP:",MUFUP,MURUP,MUFUP+MURUP, nom_dict[(proc,cat)]
-                        #if MUFRDOWN<0: print "MUFRDOWN:",MUFDOWN,MURDOWN,MUFDOWN+MURDOWN, nom_dict[(proc,cat)]
                         MUFRUP = max(MUFRUP,0.0001)
                         MUFRDOWN = max(MUFRDOWN,0.0001)
                         self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MUFR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
@@ -295,7 +289,6 @@ class DatacardMaker(object):
                         #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
                         # Full Symm, Average.
                         if sys in ['JES']:
-                        #if sys in ['JES','PU','PDF']:
                             # Simple, problematic average
                             #uperr = sys_dict[(proc,cat)][sys+'UP']-1
                             #downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
@@ -318,8 +311,8 @@ class DatacardMaker(object):
                             #elif(upjes<1): sym_JES = 1/sym_JES # Opposite direction
                             if JES_helper[(proc,cat)]=="NEG":
                                 sym_JES = 1/sym_JES
-                            if sym_JES > 2.:
-                                print "Big JES! {}".format(sym_JES)
+                            if sym_JES > 3.:
+                                print "Big JES in  {}! {} Capping to 3".format(cat,sym_JES)
                                 sym_JES = min(3.,sym_JES)
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
                         elif 'MU' not in sys: # Already took care of MUF and MUR, so don't add them again
@@ -539,8 +532,8 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',args.fakedata,args.central)
-    dm.make('../hist_files/anatest25_MergeLepFl.root',args.fakedata,args.central)
+    #dm.make('../hist_files/TOP-19-001_unblinded_v1_MergeLepFl.root',args.fakedata,args.central)
+    dm.make('../hist_files/anatest26_MergeLepFl.root',args.fakedata,args.central)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',args.fakedata,args.central) # Unblinding talk
 
     logging.info("Logger shutting down!")

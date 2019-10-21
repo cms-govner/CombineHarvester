@@ -3,8 +3,8 @@ ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so
 
 class CardSplicer(object):
     def __init__(self):
-        self.Filename1 = "anatest16.root"
-        self.Filename2 = "anatest22.root"
+        self.Filename2 = "anatest16_MergeLepFl.root"
+        self.Filename1 = "TOP-19-001_unblinded_v1_MergeLepFl.root"
 
     def splice(self):
         File1 = ROOT.TFile.Open('$CMSSW_BASE/src/CombineHarvester/TopEFT/hist_files/{}'.format(self.Filename1))
@@ -15,14 +15,14 @@ class CardSplicer(object):
         for key in File1.GetListOfKeys():
             hist = File1.Get(key.GetName())
             histname = hist.GetName()
-            if 'tZq' in histname:
+            if 'tHq' in histname:
                 outFile.cd()
                 hist.Write()
 
         for key in File2.GetListOfKeys():
             hist = File2.Get(key.GetName())
             histname = hist.GetName()
-            if not 'tZq' in histname:
+            if not 'tHq' in histname:
                 outFile.cd()
                 hist.Write()
 
