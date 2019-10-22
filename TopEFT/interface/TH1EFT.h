@@ -27,6 +27,9 @@ class TH1EFT : public TH1D
         using TH1D::GetBinContent;  // Bring the TH1D GetBinContent fcts into scope
         using TH1D::Scale;          // Bring the TH1D Scale fcts into scope (likely not needed)
 
+        // TObject* Clone(const char* newname=0); UNFINISHED!!! I think I want to do this via Copy instead
+        // void Copy(); UNFINISHED!!!!
+
         Int_t Fill(Double_t x, Double_t w, WCFit fit);
         WCFit GetBinFit(Int_t bin);
         WCFit GetSumFit();
@@ -193,7 +196,11 @@ void TH1EFT::Scale(WCPoint wc_pt)
         Double_t new_content = this->GetBinContent(i,wc_pt);
         Double_t old_error = this->GetBinError(i);
         this->SetBinContent(i,new_content);
-        this->SetBinError(i,old_error*new_content/old_content);
+        if (old_content) {
+            this->SetBinError(i,old_error*new_content/old_content);
+        } else {
+            this->SetBinError(i,0.0);
+        }
     }
     
 }
