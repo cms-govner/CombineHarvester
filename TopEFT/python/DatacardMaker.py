@@ -232,8 +232,8 @@ class DatacardMaker(object):
                     if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'pdf_gg','lnN',ch.SystMap()( 1/PDFrate ))
                     #Q2 rate uncertainty (correlated within parent process, flat rate, identical for all categories within process)
                     if proc in ['ttH']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttH','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['ttll']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
-                    if proc in ['ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttbar','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['ttll']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttV','lnN',ch.SystMap()( Q2rate ))
+                    if proc in ['ttlnu']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['tllq']:  self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_V','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['tHq']:   self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_tHq','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
@@ -254,7 +254,7 @@ class DatacardMaker(object):
                         MUFRDOWN = 1+max([(abs(MUFDOWN),MUFDOWN),(abs(MURDOWN),MURDOWN),(abs(MUFDOWN+MURDOWN),MUFDOWN+MURDOWN)], key = lambda i : i[0])[1]
                         MUFRUP = max(MUFRUP,0.0001)
                         MUFRDOWN = max(MUFRDOWN,0.0001)
-                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'MUFR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
+                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2FR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
                     for sys in sys_types:
                         # Use CMS-standard names for uncertainties
                         sys_name = sys
@@ -533,7 +533,7 @@ if __name__ == "__main__":
     # Run datacard maker
     dm = DatacardMaker()
     #dm.make('../hist_files/TOP-19-001_unblinded_v1_MergeLepFl.root',args.fakedata,args.central)
-    dm.make('../hist_files/anatest26_MergeLepFl.root',args.fakedata,args.central)
+    dm.make('../hist_files/anatest28_MergeLepFl.root',args.fakedata,args.central)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',args.fakedata,args.central) # Unblinding talk
 
     logging.info("Logger shutting down!")
