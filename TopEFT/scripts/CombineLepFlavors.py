@@ -3,7 +3,7 @@ ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so
 
 class CombineLepFlavors(object):
     def __init__(self):
-        self.Filename = "anatest28.root"
+        self.Filename = "anatest30.root"
         #self.Filename = "TOP-19-001_unblinded_v1.root"
 
     def execute(self):

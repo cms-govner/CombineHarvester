@@ -240,21 +240,23 @@ class DatacardMaker(object):
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
                     #PSISR. Overwrites hist file, which should only be correct startnig with anatest26.
-                    if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
+                    #if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
                     #Standard uncertainties with usual UP/DOWN variations
                     #Includes FR_shape, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
-                    if 'MUFUP' in sys_dict[(proc,cat)].keys():
-                        MUFUP = 1-sys_dict[(proc,cat)]['MUFUP']
-                        MUFDOWN = 1-sys_dict[(proc,cat)]['MUFDOWN']
-                        MURUP = 1-sys_dict[(proc,cat)]['MURUP']
-                        MURDOWN = 1-sys_dict[(proc,cat)]['MURDOWN']
-                        MUFMURUP = MUFUP+MURUP
-                        MUFMURDOWN = MUFDOWN+MURDOWN
-                        MUFRUP = 1+max([(abs(MUFUP),MUFUP),(abs(MURUP),MURUP),(abs(MUFUP+MURUP),MUFUP+MURUP)], key = lambda i : i[0])[1]
-                        MUFRDOWN = 1+max([(abs(MUFDOWN),MUFDOWN),(abs(MURDOWN),MURDOWN),(abs(MUFDOWN+MURDOWN),MUFDOWN+MURDOWN)], key = lambda i : i[0])[1]
-                        MUFRUP = max(MUFRUP,0.0001)
-                        MUFRDOWN = max(MUFRDOWN,0.0001)
-                        self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2FR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
+                    #if 'MUFUP' in sys_dict[(proc,cat)].keys():
+                    #    MUFUP = 1-sys_dict[(proc,cat)]['MUFUP']
+                    #    MUFDOWN = 1-sys_dict[(proc,cat)]['MUFDOWN']
+                    #    MURUP = 1-sys_dict[(proc,cat)]['MURUP']
+                    #    MURDOWN = 1-sys_dict[(proc,cat)]['MURDOWN']
+                    #    MUFMURUP = MUFUP+MURUP
+                    #    MUFMURDOWN = MUFDOWN+MURDOWN
+                    #    MUFRUP = 1+max([(abs(MUFUP),MUFUP),(abs(MURUP),MURUP),(abs(MUFUP+MURUP),MUFUP+MURUP)], key = lambda i : i[0])[1]
+                    #    MUFRDOWN = 1+max([(abs(MUFDOWN),MUFDOWN),(abs(MURDOWN),MURDOWN),(abs(MUFDOWN+MURDOWN),MUFDOWN+MURDOWN)], key = lambda i : i[0])[1]
+                    #    MUFRUP = max(MUFRUP,0.0001)
+                    #    MUFRDOWN = max(MUFRDOWN,0.0001)
+                    #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2FR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
+                    # The following are used to construct Q2RF and should not be added to the datacard.
+                    if sys in ['MUR','MUF','MURMUF']: continue
                     for sys in sys_types:
                         # Use CMS-standard names for uncertainties
                         sys_name = sys
@@ -533,7 +535,7 @@ if __name__ == "__main__":
     # Run datacard maker
     dm = DatacardMaker()
     #dm.make('../hist_files/TOP-19-001_unblinded_v1_MergeLepFl.root',args.fakedata,args.central)
-    dm.make('../hist_files/anatest28_MergeLepFl.root',args.fakedata,args.central)
+    dm.make('../hist_files/anatest30_MergeLepFl.root',args.fakedata,args.central)
     #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',args.fakedata,args.central) # Unblinding talk
 
     logging.info("Logger shutting down!")
