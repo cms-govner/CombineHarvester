@@ -87,7 +87,7 @@ class HistogramProcessor(object):
 
         self.logger.info("Looping through histograms...")
 
-        # Main parsing loop
+        # Main parsing loop for nominal histograms
         for key in readfile.GetListOfKeys():
             hist = readfile.Get(key.GetName())
 
@@ -109,7 +109,7 @@ class HistogramProcessor(object):
             # For accurate naming of systematics:
             systematic = systematic.replace('FR','FR_FF') # Don't touch this without changing below!
 
-            # For standard histogram files
+            # For standard histogram files; Number of njet bins in histograms
             maxbin = 4
             # For anatest19
             #if '2lss' in category: maxbin=2
@@ -122,7 +122,7 @@ class HistogramProcessor(object):
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
 
-            #Logic for data
+            # Logic for data yields
             if process in self.data_known:
                 if process not in data_names: data_names.append(process)
                 for bin in range(1,maxbin+1):
@@ -131,12 +131,12 @@ class HistogramProcessor(object):
                     bin_yield = hist.GetBinContent(bin,self.sm_pt)
                     data_dict.update({(process,category_njet):bin_yield})
 
-            # Logic for MC yields below
+            # Look at non-data histograms (for rest of the for loop block)
             if process not in self.bkgd_known+sgnl_histnames: continue
 
-            # Obtain signal yields, being sure to use correct histograms
+            # Add MC process names to the appropriate lists.
             if process in sgnl_histnames:
-                process = process.rsplit("_",1)[0] # Removes "_16D" suffix of signal hists
+                process = process.rsplit("_",1)[0] # Removes "_16D" suffix of private sample signal hists
                 if process not in sgnl_names: sgnl_names.append(process)
             if process in self.bkgd_known:
                 if process not in bkgd_names: bkgd_names.append(process)
@@ -179,8 +179,56 @@ class HistogramProcessor(object):
                         sys_dict[(process,category_njet)] = {}
                     sys_dict[(process,category_njet)]['MCSTATS'] = bin_ratio
 
+                
+        # Main parsing loop for systematic histograms
+        for key in readfile.GetListOfKeys():
+            hist = readfile.Get(key.GetName())
+
+            # Get categorical information from histogram name
+            histname = hist.GetName().split('.')
+            category,systematic,process = '','',''
+            if(len(histname)==3): [category,systematic,process] = histname
+            if(len(histname)==2): [category,process] = histname
+            
+            # Rename processes to be fed into DatacardMaker
+            # For renaming central sample processes:
+            process = process.replace('tZq','tllq')
+            process = process.replace('ttZ','ttll')
+            process = process.replace('ttW','ttlnu')
+            # For accurate naming of backgrounds:
+            process = process.replace('ttGJets','convs')
+            process = process.replace('WZ','Diboson')
+            process = process.replace('WWW','Triboson')
+            # For accurate naming of systematics:
+            systematic = systematic.replace('FR','FR_FF') # Don't touch this without changing below!
+
+            # For standard histogram files; Number of njet bins in histograms
+            maxbin = 4
+            # For anatest19
+            #if '2lss' in category: maxbin=2
+            #if '3l' in category: maxbin=2
+            #if '4l' in category: maxbin=4
+
+            if process in debug_processes:
+                for bin in range(1,maxbin+1):
+                    category_njet = self.name_bin(category,bin)
+                    bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
+                    self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
+
+
+            # Look at non-data histograms (for rest of the for loop block)
+            if process not in self.bkgd_known+sgnl_histnames: continue
+
+            # Add MC process names to the appropriate lists.
+            # Since this is the systematics loop, this should be redundant
+            if process in sgnl_histnames:
+                process = process.rsplit("_",1)[0] # Removes "_16D" suffix of private sample signal hists
+                if process not in sgnl_names: sgnl_names.append(process)
+            if process in self.bkgd_known:
+                if process not in bkgd_names: bkgd_names.append(process)
+
             # Logic for systematic histograms
-            else:
+            if systematic != '':
                 self.logger.debug("Systematic Hist: %s",hist.GetName())
                 if systematic not in sys_types: sys_types.append(systematic)
 

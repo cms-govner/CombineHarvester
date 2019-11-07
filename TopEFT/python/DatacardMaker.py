@@ -255,8 +255,7 @@ class DatacardMaker(object):
                     #    MUFRUP = max(MUFRUP,0.0001)
                     #    MUFRDOWN = max(MUFRDOWN,0.0001)
                     #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2FR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
-                    # The following are used to construct Q2RF and should not be added to the datacard.
-                    if sys in ['MUR','MUF','MURMUF']: continue
+
                     for sys in sys_types:
                         # Use CMS-standard names for uncertainties
                         sys_name = sys
@@ -265,7 +264,10 @@ class DatacardMaker(object):
                         if sys in ['HF','HFSTATS1','HFSTATS2','LF','LFSTATS1','LFSTATS2']:
                             sys_name = sys.lower()
 
+                        # Only the UP/DOWN systematics from histograms are left to be added
                         if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
+                        # The following are used to construct Q2RF and should not be added to the datacard.
+                        if sys in ['MUR','MUF','MURMUF']: continue
                         #if sys in ['CERR1','CERR2']: # DEBUG for CERR. Might not want this!
                         #    sysup = sys_dict[(proc,cat)][sys+'UP']
                         #    sysdown = sys_dict[(proc,cat)][sys+'DOWN']
