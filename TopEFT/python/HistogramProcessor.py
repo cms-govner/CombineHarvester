@@ -303,7 +303,7 @@ class HistogramProcessor(object):
 
         # For roughly testing statistical effects
         #for key in data_dict:
-            #    data_dict[key]=data_dict[key]*10
+        #    data_dict[key]=data_dict[key]*10
         #for key in fakedata_dict:
         #    fakedata_dict[key]=fakedata_dict[key]*10
         #for key in nom_dict:
