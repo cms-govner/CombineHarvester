@@ -49,14 +49,13 @@ class DatacardMaker(object):
                     for proc in sgnl_names+bkgd_names:
                         for cat in categories:
                             if sys not in sys_dict[(proc,cat)].keys(): continue
-                            #print sys_dict[(proc,cat)].keys()
                             upfl = sys_dict[(proc,cat)][sys]
                             downfl = sys_dict[(proc,cat)][sys[:-2]+'DOWN']
                             samedirdict[sys[:-2]][0] += 1
                             if (upfl-1)*(downfl-1)>0: samedirdict[sys[:-2]][1] += 1
                     print sys[:-2], round(100*samedirdict[sys[:-2]][1]/samedirdict[sys[:-2]][0],1)
                     
-        # Implement Rule-based JES
+        # Implement Rule-based JES correlations
         JES_helper = {}
         cats_noNJ = [cats.rsplit('_',1)[0] for cats in categories]
         for proc in sgnl_names+bkgd_names:
@@ -120,12 +119,12 @@ class DatacardMaker(object):
         self.logger.info("Adding observation rates...")
         self.cb.ForEachObs(lambda x: x.set_rate(obs_rates[x.bin()])) #Not split by process/channel, obviously
 
-        #Function for making sure bin yield > 0
+        #Fill the nominal MC rates
+        #Use a function to only add bins with yield > 0
         def checkRate(x):
             if nom_dict[x.process(),x.bin()]>self.minyield:
                 x.set_rate(nom_dict[x.process(),x.bin()])
 
-        #Fill the nominal MC rates
         self.logger.info("Adding MC rates...")
         self.cb.ForEachProc(lambda x: checkRate(x))
 
@@ -239,10 +238,10 @@ class DatacardMaker(object):
                     if proc in ['Diboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['Triboson']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_VVV','lnN',ch.SystMap()( Q2rate ))
                     if proc in ['convs']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCDscale_ttG','lnN',ch.SystMap()( Q2rate ))
-                    #PSISR. Overwrites hist file, which should only be correct startnig with anatest26.
+                    # PSISR. Overwrites hist file, which should only be correct startnig with anatest26.
                     #if proc not in ['fakes','charge_flips']: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [PSISRDOWN,PSISRUP] ))
-                    #Standard uncertainties with usual UP/DOWN variations
-                    #Includes FR_shape, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, MUR, MUF, LEPID, TRG, PU, PSISR
+
+                    # Before Q2RF was included in histogram file, this was used temporarily:
                     #if 'MUFUP' in sys_dict[(proc,cat)].keys():
                     #    MUFUP = 1-sys_dict[(proc,cat)]['MUFUP']
                     #    MUFDOWN = 1-sys_dict[(proc,cat)]['MUFDOWN']
@@ -256,6 +255,8 @@ class DatacardMaker(object):
                     #    MUFRDOWN = max(MUFRDOWN,0.0001)
                     #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'Q2FR','lnN',ch.SystMap()( [MUFRDOWN, MUFRUP] ))
 
+                    # Standard uncertainties with usual UP/DOWN variations
+                    # Includes FR_FF, JES, CERR1, CERR2, HF, HFSTATS1, HFSTATS2, LF, LFSTATS1, LFSTATS2, Q2RF, LEPID, TRG, PU, PSISR
                     for sys in sys_types:
                         # Use CMS-standard names for uncertainties
                         sys_name = sys
@@ -268,58 +269,22 @@ class DatacardMaker(object):
                         if sys+'UP' not in sys_dict[(proc,cat)].keys(): continue
                         # The following are used to construct Q2RF and should not be added to the datacard.
                         if sys in ['MUR','MUF','MURMUF']: continue
-                        #if sys in ['CERR1','CERR2']: # DEBUG for CERR. Might not want this!
-                        #    sysup = sys_dict[(proc,cat)][sys+'UP']
-                        #    sysdown = sys_dict[(proc,cat)][sys+'DOWN']
-                        #    sysavg = 1+(abs(sysup-1)+abs(sysdown-1))/2
-                        #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sysavg ))
-                        #else:
-                        
-                        # Largest of errors
-                        #if sys in ['JES'] and ((sys_dict[(proc,cat)][sys+'DOWN']-1)*(sys_dict[(proc,cat)][sys+'UP']-1))>0:
-                        #if sys in ['JES']:
-                        #    uperr = sys_dict[(proc,cat)][sys+'UP']-1
-                        #    downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
-                        #    symerr = max(abs(uperr),abs(downerr))
-                        #    if uperr<0:
-                        #        sym_JES = 1-symerr
-                        #    else:
-                        #        sym_JES = 1+symerr
-                        #    #print("Symmetrizing errors: {}, {} for rate {}".format(downerr,uperr,nom_dict[(proc,cat)]))
-                        #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
-                        # Partial Symm, Average.
-                        #if sys in ['JES'] and ((sys_dict[(proc,cat)][sys+'DOWN']-1)*(sys_dict[(proc,cat)][sys+'UP']-1))>0:
-                        #    sym_JES = (sys_dict[(proc,cat)][sys+'DOWN']+sys_dict[(proc,cat)][sys+'UP'])/2
-                        #    self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
-                        # Full Symm, Average.
+
+                        # JES is a special case. Symmetrize and use JESHelper to get correlation
                         if sys in ['JES']:
-                            # Simple, problematic average
-                            #uperr = sys_dict[(proc,cat)][sys+'UP']-1
-                            #downerr = sys_dict[(proc,cat)][sys+'DOWN']-1
-                            #symerr = (abs(uperr)+abs(downerr))/2
-                            #if uperr<0:
-                            #    sym_JES = 1-symerr
-                            #else:
-                            #    sym_JES = 1+symerr
-                            # More complex average
                             upjesabs = upjes = sys_dict[(proc,cat)][sys+'UP']
                             downjesabs = downjes = sys_dict[(proc,cat)][sys+'DOWN']
                             if upjes<1: upjesabs=1/upjes
                             if downjes<1: downjesabs=1/downjes
                             sym_JES = (upjesabs+downjesabs)/2
-                            #if (upjes-1)*(downjes-1)>0: # Same direction
-                            #    if upjes < 1 and upjes<downjes: # e.g. up=0.8,down=0.98
-                            #        sym_JES = 1/sym_JES
-                            #    if upjes > 1 and upjes<downjes: # e.g. up=1.02,down=1.2
-                            #        sym_JES = 1/sym_JES
-                            #elif(upjes<1): sym_JES = 1/sym_JES # Opposite direction
                             if JES_helper[(proc,cat)]=="NEG":
                                 sym_JES = 1/sym_JES
-                            if sym_JES > 3.:
+                            if sym_JES > 3.: # Occasionally this process gives erroneously large uncertainties
                                 print "Big JES in  {}! {} Capping to 3".format(cat,sym_JES)
                                 sym_JES = min(3.,sym_JES)
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
-                        elif 'MU' not in sys: # Already took care of MUF and MUR, so don't add them again
+                        # Add the standard UP/DOWN systematics
+                        else:
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
 
         # Make nuisance groups for easy testing in combine
@@ -416,6 +381,8 @@ class DatacardMaker(object):
             del line
             print ""
 
+
+        # Make Datacard
         #self.cb.PrintAll() # Print the entire datacard to terminal
         self.logger.info("Writing datacard '%s'...",self.outf)
         self.cb.WriteDatacard(self.outf)
@@ -536,9 +503,7 @@ if __name__ == "__main__":
 
     # Run datacard maker
     dm = DatacardMaker()
-    #dm.make('../hist_files/TOP-19-001_unblinded_v1_MergeLepFl.root',args.fakedata,args.central)
-    dm.make('../hist_files/anatest30_MergeLepFl.root',args.fakedata,args.central)
-    #dm.make('../hist_files/TOP-19-001_unblinded_v1.root',args.fakedata,args.central) # Unblinding talk
+    dm.make('../hist_files/anatest28_redoFullWF-NoStreaming_MergeLepFl.root',args.fakedata,args.central)
 
     logging.info("Logger shutting down!")
     logging.shutdown()

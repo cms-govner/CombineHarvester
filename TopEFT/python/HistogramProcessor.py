@@ -8,15 +8,19 @@ ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so
 class HistogramProcessor(object):
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.data_known = ['data']
         self.sgnl_known = ['ttH','tllq','ttll','ttlnu','tHq']
         self.sgnl_histnames_private = [sgnl + '_' + '16D' for sgnl in self.sgnl_known] # For private samples
         self.sgnl_histnames_central = ['ttH','tllq','ttll','ttlnu','tHq_16D'] # For central samples in anatest22 onward
         self.bkgd_known = ['charge_flips','fakes','Diboson','Triboson','convs']
         #self.sgnl_histnames = ['ttH','tllq','ttll','ttlnu','tHq'] # For central samples in anatest16
-        #self.sgnl_known = ['tllq']
+        # For quick studies of individual processes
+        #self.sgnl_known = ['ttll'] 
         #self.sgnl_histnames = ['ttll_16D']
         #self.bkgd_known = []
-        self.data_known = ['data']
+
+        # Set SM WC Point to be used for extracting nominal yields
+        self.sm_pt = ROOT.WCPoint()
 
         # Initialize reweight point for fake data
         WCPoint_string = 'fakedata'
@@ -24,21 +28,25 @@ class HistogramProcessor(object):
             'ctW','ctp','cpQM','ctZ','ctG','cbW','cpQ3','cptb',
             'cpt','cQl3i','cQlMi','cQei','ctli','ctei','ctlSi','ctlTi'
         ]
+        # Use a custom WC point
         #for op in self.operators_fakedata:
-            # All set to 1
-        #    WCPoint_string += '_{op}_1'.format(op=op)
+            # E.g. All set to 1
+            #WCPoint_string += '_{op}_1'.format(op=op)
 
-            # 2-sigma values for a few operators
+            # Examples for specific WCs
             #if op == 'ctW': WCPoint_string += '_{op}_3.56'.format(op=op)
             #if op == 'cbW': WCPoint_string += '_{op}_1.18'.format(op=op)
             #if op == 'cQlMi': WCPoint_string += '_{op}_6.15'.format(op=op)
         #self.rwgt_pt = ROOT.WCPoint(WCPoint_string,1.0)
-        self.rwgt_pt = ROOT.WCPoint()
-        self.sm_pt = ROOT.WCPoint()
+        # Or use the asimov dataset instead
+        self.rwgt_pt = ROOT.WCPoint() 
+
         
-        # Minimal yield required
+        # Minimal signal yield required per bin (normally only removes 4l_1j)
         self.sumsignal_min = 0.01
 
+    # Naming convention for bins
+    # Cannot start with a number, so prepend "C_"
     def name_bin(self,category,bin):
         # For standard histogram files
         if "2lss" in category:
@@ -55,6 +63,7 @@ class HistogramProcessor(object):
         #if "4l" in category:
         #    return 'C_{0}_{1}{2}j'.format(category, 'ge' if bin==3 else '', bin)
 
+    # Main processing loop
     def process(self,infile,fake_data,central):
         self.logger.info("Setting up...")
         readfile = ROOT.TFile.Open(infile)
@@ -69,7 +78,7 @@ class HistogramProcessor(object):
         data_names=[] #e.g. doubleEle
         sgnl_names=[] #e.g. ttH
         bkgd_names=[] #e.g. Diboson
-        sys_types=[] #e.g. Lumi
+        sys_types=[] #e.g. JES
 
         # Dicts for rates
         data_dict={} #process,category:rate
@@ -109,20 +118,21 @@ class HistogramProcessor(object):
             # For accurate naming of systematics:
             systematic = systematic.replace('FR','FR_FF') # Don't touch this without changing below!
 
-            # For standard histogram files; Number of njet bins in histograms
+            # Number of njet bins in histograms
             maxbin = 4
             # For anatest19
             #if '2lss' in category: maxbin=2
             #if '3l' in category: maxbin=2
             #if '4l' in category: maxbin=4
 
+            # Print yield of debug processes
             if process in debug_processes:
                 for bin in range(1,maxbin+1):
                     category_njet = self.name_bin(category,bin)
                     bin_yield = round(hist.GetBinContent(bin,self.sm_pt),4)
                     self.logger.debug("%s %s %s",process,category_njet,str(bin_yield))
 
-            # Logic for data yields
+            # For data histograms
             if process in self.data_known:
                 if process not in data_names: data_names.append(process)
                 for bin in range(1,maxbin+1):
@@ -131,7 +141,7 @@ class HistogramProcessor(object):
                     bin_yield = hist.GetBinContent(bin,self.sm_pt)
                     data_dict.update({(process,category_njet):bin_yield})
 
-            # Look at non-data histograms (for rest of the for loop block)
+            # For data histograms, skip the rest of the loop
             if process not in self.bkgd_known+sgnl_histnames: continue
 
             # Add MC process names to the appropriate lists.
@@ -159,22 +169,14 @@ class HistogramProcessor(object):
                         fakedata_dict.update({(process,category_njet):fakedata_bin_yield})
 
                 # Get MCStats uncertainty for the nominal histograms
-                for bin in range(1,maxbin+1): # Doesn't include bin 5
-                    #Check category exists. This is probably redundant as if it doesn't, it should give an error when calculating the ratio
-                    category_njet = self.name_bin(category,bin)
-                    if category_njet not in categories: categories.append(category_njet)
-
-                    #Calculate ratio to nominal
-                    #If the nominal yield is zero, set the ratio to 1.0
-                    #If the systematic yield is 0, set the ratio to 0.0001
-                    # MC Stats is only for fake rate for now!
+                # Currently only used for Fakes
+                for bin in range(1,maxbin+1):
+                    #Calculate the percent error
                     if nom_dict[(process,category_njet)] > 0:
-                        #bin_error = round(math.sqrt(hist.GetBinContent(bin,self.sm_pt)),8)
                         bin_error = round(hist.GetBinError(bin),8)
                         bin_ratio = 1+bin_error/nom_dict[(process,category_njet)]
-                        bin_ratio = max(bin_ratio,0.0001)
 
-                    #Create sys_dict key if it doesn't exit; can't edit a dict object that doesn't exist yet
+                    #Create sys_dict key if it doesn't exist; can't edit a dict object that doesn't exist yet
                     if not sys_dict.has_key((process,category_njet)):
                         sys_dict[(process,category_njet)] = {}
                     sys_dict[(process,category_njet)]['MCSTATS'] = bin_ratio
@@ -202,7 +204,7 @@ class HistogramProcessor(object):
             # For accurate naming of systematics:
             systematic = systematic.replace('FR','FR_FF') # Don't touch this without changing below!
 
-            # For standard histogram files; Number of njet bins in histograms
+            # Number of njet bins in histograms
             maxbin = 4
             # For anatest19
             #if '2lss' in category: maxbin=2
@@ -220,7 +222,7 @@ class HistogramProcessor(object):
             if process not in self.bkgd_known+sgnl_histnames: continue
 
             # Add MC process names to the appropriate lists.
-            # Since this is the systematics loop, this should be redundant
+            # Since this is the systematics loop, this should be redundant and do nothing
             if process in sgnl_histnames:
                 process = process.rsplit("_",1)[0] # Removes "_16D" suffix of private sample signal hists
                 if process not in sgnl_names: sgnl_names.append(process)
@@ -233,10 +235,11 @@ class HistogramProcessor(object):
                 if systematic not in sys_types: sys_types.append(systematic)
 
                 for bin in range(1,maxbin+1):
-                    # Check category exists. This is probably redundant as if it doesn't, it should 
-                    #   give an error when calculating the ratio
+                    # Check category exists. If it doesn't, that means the nominal histogram was missing!!
                     category_njet = self.name_bin(category,bin)
-                    if category_njet not in categories: categories.append(category_njet)
+                    if category_njet not in categories:
+                        self.logger.error("Systematic histogram present, but not nominal!!")
+                        self.logger.error("Skipping {} in {}".format(systematic,category_njet))
 
                     #Calculate ratio to nominal
                     #If the nominal yield is zero, don't include at all!
@@ -256,8 +259,7 @@ class HistogramProcessor(object):
                         #Create sys_dict key if it doesn't exist; can't edit a dict object that doesn't exist yet
                         if not sys_dict.has_key((process,category_njet)):
                             sys_dict[(process,category_njet)] = {}
-                        sys_dict[(process,category_njet)][systematic] = bin_ratio # USE ME!!!
-                        #sys_dict[(process,category_njet)][systematic] = min(1.5,bin_ratio) #BAD! DELETE ME!
+                        sys_dict[(process,category_njet)][systematic] = bin_ratio
 
                 #Append systematic type to list, but don't split into UP/DOWN
                 sys_type = systematic
@@ -284,10 +286,6 @@ class HistogramProcessor(object):
                     self.logger.debug("    {} {}".format(proc,nom_dict[proc,cat]))
             if sgnl >= self.sumsignal_min:
                 categories_nonzero.append(cat)
-                #if bkgd >= 0.01:
-                #    categories_nonzero.append(cat)
-                #else:
-                #    self.logger.info("Skipping %s for low background yield.",cat)
             else:
                 self.logger.info("Skipping %s for low signal yield.",cat)
             if cat in debug_categories: self.logger.debug("%s %s %s",str(bkgd),str(sgnl),str(bkgd+sgnl))
