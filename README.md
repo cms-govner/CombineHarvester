@@ -34,7 +34,8 @@ The resulting datacard will be created in the current directory and named "EFT_M
 By default, this script sets the observation to data.
 
 Options:
-    --fakedata # By default, uses Asimov dataset. This can be modified to use any WC point in HistogramProcessor.py in __init__
+
+    --fakedata # By default, uses Asimov dataset. This can be modified to use any WC point in HistogramProcessor.py in __init__\
     --central # Uses central sample histograms for signal expectation
 
 ## Other scripts
