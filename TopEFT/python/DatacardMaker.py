@@ -764,14 +764,14 @@ class DatacardMaker(object):
                         isr_down,isr_up = PSISR_syst[cat]
                         fsr_down,fsr_up = PSFSR_syst[cat]
                         if isr_down != -1 and isr_up != -1:
-                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR','lnN',ch.SystMap()( [isr_down,isr_up] ))
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSISR_'+proc,'lnN',ch.SystMap()( [isr_down,isr_up] ))
                         if fsr_down != -1 and fsr_up != -1:
-                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSFSR','lnN',ch.SystMap()( [fsr_down,fsr_up] ))
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSFSR_'+proc,'lnN',ch.SystMap()( [fsr_down,fsr_up] ))
                     # Use hardcoded values for QCUT systematic
                     if proc in ['ttH','ttll','ttlnu']:
                         qcut_down, qcut_up = QCUT_syst[cat]
-                        # Disable including the QCUT systematics for right now
-                        if qcut_down != -1 and qcut_up != -1: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCUT','lnN',ch.SystMap()( [qcut_down,qcut_up] ))
+                        if qcut_down != -1 and qcut_up != -1:
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'QCUT_'+proc,'lnN',ch.SystMap()( [qcut_down,qcut_up] ))
                     if proc in ['tllq','tHq']:
                         missing_parton_syst = ADHOC_LO_MISSING_PARTON_SYST[cat]
                         if missing_parton_syst != -1: self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'missing_parton','lnN',ch.SystMap()( missing_parton_syst ))
@@ -855,7 +855,19 @@ class DatacardMaker(object):
                                 print "Big JES in  {}! {} Capping to 3".format(cat,sym_JES)
                                 sym_JES = min(3.,sym_JES)
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( sym_JES ))
-                        elif 'MU' not in sys: # Already took care of MUF and MUR, so don't add them again
+                        elif sys in ['Q2RF']: # Decorrelate the fact+renorm systematics
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name+"_"+proc,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                        elif sys in ['PSISR']: # Decorrelate the parton shower systematics
+                            self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name+"_"+proc,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                            if sys in ['PSISR']: # Need to add in the PSFSR for the non-signal backgrounds by hand
+                                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSFSR_'+proc,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                        elif sys in ['PDF']: # Decorrelate the shape PDFs for the 4f and 5f samples
+                            if proc in ['tllq','tHq']:
+                                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_4f','lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                            else:
+                                self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PDF_5f','lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
+                        else:
+                        # elif 'MU' not in sys: # Already took care of MUF and MUR, so don't add them again
                             self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,sys_name,'lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
                             if sys in ['PSISR']: # Need to add in the PSFSR for the non-signal backgrounds by hand
                                 self.cb.cp().process([proc]).bin([cat]).AddSyst(self.cb,'PSFSR','lnN',ch.SystMap()( [sys_dict[(proc,cat)][sys+'DOWN'], sys_dict[(proc,cat)][sys+'UP']] ))
