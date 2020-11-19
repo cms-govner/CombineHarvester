@@ -3,7 +3,8 @@ import math
 import ROOT
 import matplotlib.pyplot as plt
 
-ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so')
+ROOT.gSystem.Load('$CMSSW_BASE/lib/$SCRAM_ARCH/libEFTGenReaderEFTHelperUtilities.so')
+#ROOT.gSystem.Load('$CMSSW_BASE/src/CombineHarvester/TopEFT/interface/TH1EFT_h.so')
 
 class HistogramProcessor(object):
     def __init__(self):
